@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Title of the document</title>
+<script src="ModelProperty.js"></script>
+<script src="ModelView.js"></script>
+<script src="BindableProperty.js"></script>
+<script src="IDictionary.js"></script>
+<script src="ObservableArray.js"></script>
+<script src="ObservableItem.js"></script>
+</head>
+
+<body onload='window["testModel"] = new ModelView("testModel", { animal: { name: "Tom", ok:false }, zoo: [ {name: "ani_zoo1", id:1},{name: "ani_zoo2", id:2}  ], zoo2: [ {name: "ani_zoo3", id:3},{name: "ani_zoo4", id:4}] });'>
+¿Has escrito algo?:
+<input type="text" id="txtTest" data-mh="testModel" data-mh-value="#this.animal.name.length > 0" data-mh-disabled="animal.ok" />
+<div id="divTest" data-mh="testModel" data-mh-style.display="#this.animal.name.length > 0? '': 'none'">
+Tu has escrito en el textbox
+</div>
+<br />
+Textbox2:
+<input type="text" id="txtTest2" data-mh="testModel" data-mh-value="animal.name" data-mh-disabled="animal.ok" />
+<br />
+<span data-mh="testModel" data-mh-style.display="#this.animal.name.length > 0? '': 'none'">Span:</span>
+<span id="spanTest" data-mh="testModel" data-mh-innerHTML="animal.name" data-mh-style.display="#this.animal.name.length > 0? '': 'none'"></span>
+<br />
+Select:
+<select id="ddlTest" data-mh="testModel" data-mh-children="zoo" data-mh-value="selectedZoo">
+	<option data-mh="zoo" data-mh-text="name" data-mh-value="#this"></option>
+</select>
+<br />
+Select2:
+<select id="ddlTest2" data-mh="testModel" data-mh-children="zoo2" data-mh-disabled="#this.animal.name.length > 0">
+	<option data-mh="zoo2" data-mh-text="name" data-mh-value="id"></option>
+</select>
+<br />
+ULs
+<ul id="ulTest" data-mh="testModel" data-mh-children="zoo">
+	<li data-mh="zoo" data-mh-innerHTML="name"></li>
+</ul>
+DIVs
+<hr>
+<div id="divTest2" data-mh="testModel" data-mh-children="zoo2">
+	<div>
+		<p>Nombre: <span data-mh="zoo2" data-mh-innerHTML="name"></span></p>
+		<p>ID: <span data-mh="zoo2" data-mh-innerHTML="id"></span></p>
+		<hr>
+	</div>
+</div>
+
+</body>
+
+</html> 
