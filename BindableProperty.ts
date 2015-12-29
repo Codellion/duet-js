@@ -1,5 +1,6 @@
 /// <reference path="ObservableArray.ts" />
 /// <reference path="ModelProperty.ts" />
+/// <reference path="DynamicCode.ts" />
 
 class BindableProperty {
 	name: string;
@@ -18,18 +19,23 @@ class BindableProperty {
 		if (this._parseInProgress)
 			return null;
 
-		if(this.name.indexOf('#') == 0) {
-			var result = this.evalInContext(this.name.slice(1), this._parentValue);
+		if(this.name.indexOf('#') == 0 && this.dirty == true) {
+			var func = this.name.slice(1);
+			var result: any = null;
+
+			if (func.indexOf("=>") != -1)
+				func = DynamicCode.parseLambdaExpression(func);
+
+			result = DynamicCode.evalInContext(func, this._parentValue);
+
 			if (typeof result == "object") {
 				this._parseInProgress = true;
 				var cache = [];
 				result = JSON.stringify(result, function(key, value) {
 				    if (typeof value === 'object' && value !== null) {
 				        if (cache.indexOf(value) !== -1) {
-				            // Circular reference found, discard key
 				            return;
 				        }
-				        // Store value in our collection
 				        cache.push(value);
 				    }
 				    return value;
@@ -39,6 +45,9 @@ class BindableProperty {
 
 				result = "#JSON#" + result;
 			}
+
+			this._value = result;
+			this.dirty = false;
 
 			return result;
 		}
@@ -70,13 +79,7 @@ class BindableProperty {
 
     set value(value: any) {
         this._value = value;
-
-        if (Array.isArray(this._value) || this._value instanceof ObservableArray)
-			this.dirty = true;
-
 		document.dispatchEvent(this.propertyChange);
-
-		this.dirty = false;
     }
 
     set internalValue(value: any) {
@@ -105,26 +108,21 @@ class BindableProperty {
 		if(Array.isArray(value) || value instanceof ObservableArray) {
 			if (Array.isArray(value)) {
 				var obsArr = new ObservableArray(propertyName);
-				this._tempValue = value;
+				obsArr.initialize(value);
 				this.value = obsArr;
 			}
 			else
-				this.value = value;				
+				this.value = value;		
+			this.dirty = true;		
 		}
 		else {
 			this.value = value;
 		}
 	}
 
-	private evalInContext(js, context) {
-		return function() { return eval(js); }.call(context);
-	}
-
 	dispatchChangeEvent() {
-		if (this._tempValue != null && this.value instanceof ObservableArray) {
-			(<ObservableArray<Object>>this.value).initialize(<Object[]>this._tempValue);
-			this._tempValue = null;
-		}
+		this.dirty = true;
 		document.dispatchEvent(this.propertyChange);
+		this.dirty = false;
 	}
 }

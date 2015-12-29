@@ -4,3 +4,4 @@
 /// <reference path="ModelView.ts" />
 /// <reference path="ObservableArray.ts" />
 /// <reference path="ObservableItem.ts" />
+/// <reference path="DynamicCode.ts" />

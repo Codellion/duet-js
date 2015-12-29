@@ -16,7 +16,7 @@ class ObservableArray<T> extends Array<T> {
 	}
 
 	initialize(items: Array<T>): void {
-		items.forEach((n) => this.push(n));
+		items.forEach((n) => super.push(n));
 	}
 
 	push(...items: T[]): number {

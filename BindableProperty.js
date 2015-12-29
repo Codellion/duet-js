@@ -1,5 +1,6 @@
 /// <reference path="ObservableArray.ts" />
 /// <reference path="ModelProperty.ts" />
+/// <reference path="DynamicCode.ts" />
 var BindableProperty = (function () {
     function BindableProperty(propertyName, hashEventName, value, parentValue) {
         this.dirty = false;
@@ -11,11 +12,12 @@ var BindableProperty = (function () {
         if (Array.isArray(value) || value instanceof ObservableArray) {
             if (Array.isArray(value)) {
                 var obsArr = new ObservableArray(propertyName);
-                this._tempValue = value;
+                obsArr.initialize(value);
                 this.value = obsArr;
             }
             else
                 this.value = value;
+            this.dirty = true;
         }
         else {
             this.value = value;
@@ -25,18 +27,20 @@ var BindableProperty = (function () {
         get: function () {
             if (this._parseInProgress)
                 return null;
-            if (this.name.indexOf('#') == 0) {
-                var result = this.evalInContext(this.name.slice(1), this._parentValue);
+            if (this.name.indexOf('#') == 0 && this.dirty == true) {
+                var func = this.name.slice(1);
+                var result = null;
+                if (func.indexOf("=>") != -1)
+                    func = DynamicCode.parseLambdaExpression(func);
+                result = DynamicCode.evalInContext(func, this._parentValue);
                 if (typeof result == "object") {
                     this._parseInProgress = true;
                     var cache = [];
                     result = JSON.stringify(result, function (key, value) {
                         if (typeof value === 'object' && value !== null) {
                             if (cache.indexOf(value) !== -1) {
-                                // Circular reference found, discard key
                                 return;
                             }
-                            // Store value in our collection
                             cache.push(value);
                         }
                         return value;
@@ -45,6 +49,8 @@ var BindableProperty = (function () {
                     this._parseInProgress = false;
                     result = "#JSON#" + result;
                 }
+                this._value = result;
+                this.dirty = false;
                 return result;
             }
             else {
@@ -53,10 +59,7 @@ var BindableProperty = (function () {
         },
         set: function (value) {
             this._value = value;
-            if (Array.isArray(this._value) || this._value instanceof ObservableArray)
-                this.dirty = true;
             document.dispatchEvent(this.propertyChange);
-            this.dirty = false;
         },
         enumerable: true,
         configurable: true
@@ -106,15 +109,10 @@ var BindableProperty = (function () {
         enumerable: true,
         configurable: true
     });
-    BindableProperty.prototype.evalInContext = function (js, context) {
-        return function () { return eval(js); }.call(context);
-    };
     BindableProperty.prototype.dispatchChangeEvent = function () {
-        if (this._tempValue != null && this.value instanceof ObservableArray) {
-            this.value.initialize(this._tempValue);
-            this._tempValue = null;
-        }
+        this.dirty = true;
         document.dispatchEvent(this.propertyChange);
+        this.dirty = false;
     };
     return BindableProperty;
 })();

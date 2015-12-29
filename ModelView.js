@@ -1,6 +1,17 @@
 /// <reference path="ModelProperty.ts" />
 /// <reference path="BindableProperty.ts" />
 /// <reference path="IDictionary.ts" />
+//IE Fix
+(function () {
+    function CustomEvent(event, params) {
+        params = params || { bubbles: false, cancelable: false, detail: undefined };
+        var evt = document.createEvent('CustomEvent');
+        evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+        return evt;
+    }
+    CustomEvent.prototype = Event.prototype;
+    window["CustomEvent"] = CustomEvent;
+})();
 var ModelView = (function () {
     function ModelView(modelName, model, elementContainer, elementModel) {
         var _this = this;
@@ -15,14 +26,14 @@ var ModelView = (function () {
         if (modelName) {
             var docElements = null;
             if (elementContainer) {
-                docElements = elementContainer.querySelectorAll("[data-mh='" + elementModel + "']");
+                docElements = elementContainer.querySelectorAll("[data-dt='" + elementModel + "']");
                 var mdContainer = new ModelProperty(this, elementContainer);
                 for (var bindName in mdContainer.bindings)
                     mdContainer.bindings[bindName].dispatchChangeEvent();
                 this.properties.push(mdContainer);
             }
             else
-                docElements = document.querySelectorAll("[data-mh='" + modelName + "']");
+                docElements = document.querySelectorAll("[data-dt='" + modelName + "']");
             if (docElements.length > 0) {
                 var docElementsArr = Array.prototype.slice.call(docElements, 0);
                 docElementsArr.forEach(function (element, index) {
@@ -31,10 +42,8 @@ var ModelView = (function () {
                         _this.properties.push(newProperty);
                     }
                 });
-                this.properties.forEach(function (p) {
-                    for (var bindName in p.bindings)
-                        p.bindings[bindName].dispatchChangeEvent();
-                });
+                for (var bindName in this.bindings)
+                    this.bindings[bindName].dispatchChangeEvent();
             }
         }
         this.isInitialization = false;

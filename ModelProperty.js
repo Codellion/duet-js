@@ -9,7 +9,7 @@ var ModelProperty = (function () {
         this.pendingSync = {};
         var binding = false;
         for (var name in this.component.dataset) {
-            if (this.component.dataset.hasOwnProperty(name) && name.indexOf("mh") == 0) {
+            if (this.component.dataset.hasOwnProperty(name) && name.indexOf("dt") == 0) {
                 if (name.length > 2) {
                     var bindName = name[2].toLowerCase() + name.slice(3);
                     var bindValue = this.component.dataset[name];
@@ -31,22 +31,21 @@ var ModelProperty = (function () {
                 var propName = this.componentBindings[bindableProp];
                 var bindProperty = this.bindings[propName];
                 document.addEventListener(bindProperty.propertyChangeEvent, function (e) { return _this.onBindingChange(e); }, false);
-                if (this.bindings[propName].value instanceof ObservableArray) {
+                if (this.bindings[propName].objectValue instanceof ObservableArray) {
                     document.addEventListener(propName + "elementAdded", function (e) {
                         if (e.detail instanceof ObservableItem) {
-                            _this.bindingObservableItem(e.detail.name, e.detail.index, e.detail.item);
+                            var prop = _this.getComponentBinding(e.detail.name);
+                            _this.bindingObservableItem(e.detail.name, e.detail.index, e.detail.item, prop);
                         }
                     });
                     document.addEventListener(propName + "elementRemoved", function (e) {
                         if (e.detail instanceof ObservableItem) {
-                            var prop = null;
-                            for (var bind in _this.componentBindings)
-                                if (e.detail.name == _this.componentBindings[bind]) {
-                                    prop = bind;
-                                    break;
-                                }
+                            var prop = _this.getComponentBinding(e.detail.name);
                             if (prop != null) {
-                                _this.component[prop][e.detail.index].remove();
+                                if (_this.component[prop][e.detail.index].remove)
+                                    _this.component[prop][e.detail.index].remove();
+                                else
+                                    _this.component.removeChild(_this.component.children[e.detail.index]);
                             }
                         }
                     });
@@ -105,30 +104,7 @@ var ModelProperty = (function () {
             var instance = this;
             this._component = value;
             var observer = new MutationObserver(function (mutations) {
-                mutations.forEach(function (mutation) {
-                    if (mutation.target instanceof HTMLElement) {
-                        for (var compBind in _this.componentBindings) {
-                            var auxCompBind = compBind;
-                            if (compBind.indexOf('.') != -1)
-                                auxCompBind = auxCompBind.split('.')[0];
-                            if (auxCompBind === mutation.attributeName) {
-                                var internalComponent = mutation.target;
-                                if (compBind.indexOf('.') != -1) {
-                                    var internalProps = compBind.split('.');
-                                    auxCompBind = internalProps[internalProps.length - 1];
-                                    internalProps = internalProps.slice(0, internalProps.length - 1);
-                                    internalProps.forEach(function (n) {
-                                        if (!internalComponent[n])
-                                            internalComponent[n] = {};
-                                        internalComponent = internalComponent[n];
-                                    });
-                                }
-                                _this.pendingSync[compBind] = internalComponent[auxCompBind];
-                                break;
-                            }
-                        }
-                    }
-                });
+                mutations.forEach(function (mutation) { return _this.syncComponentChange(mutation.target, mutation.attributeName); });
                 _this.syncDependencies(instance);
             });
             var config = { attributes: true, childList: false, characterData: true };
@@ -148,19 +124,15 @@ var ModelProperty = (function () {
         configurable: true
     });
     ModelProperty.prototype.syncDependencies = function (instance) {
-        instance.component.dispatchEvent(instance.componentSync);
+        if (!this.modelView.isInitialization)
+            instance.component.dispatchEvent(instance.componentSync);
         instance.pendingSync = {};
     };
     ModelProperty.prototype.onBindingChange = function (args) {
         args.preventDefault();
-        var prop = "";
         var internalComponent = this.component;
-        for (var bind in this.componentBindings)
-            if (args.detail.name == this.componentBindings[bind]) {
-                prop = bind;
-                break;
-            }
-        if (prop.indexOf('.') != -1) {
+        var prop = this.getComponentBinding(args.detail.name);
+        if (prop != null && prop.indexOf('.') != -1) {
             var internalProps = prop.split('.');
             prop = internalProps[internalProps.length - 1];
             internalProps = internalProps.slice(0, internalProps.length - 1);
@@ -174,13 +146,16 @@ var ModelProperty = (function () {
             if (internalComponent[prop].__proto__ == HTMLCollection.prototype) {
                 if (this.bindings[args.detail.name].dirty) {
                     for (var j = internalComponent[prop].length - 1; j > -1; j--)
-                        internalComponent[prop][j].remove();
-                    if (Array.isArray(args.detail.value) || args.detail.value instanceof ObservableArray) {
-                        for (var i = 0; i < args.detail.value.length; i++)
-                            this.bindingObservableItem(args.detail.name, i, args.detail.value[i]);
+                        if (internalComponent[prop][j].remove)
+                            internalComponent[prop][j].remove();
+                        else
+                            this.component.removeChild(this.component.children[j]);
+                    if (Array.isArray(args.detail.objectValue) || args.detail.objectValue instanceof ObservableArray) {
+                        for (var i = 0; i < args.detail.objectValue.length; i++)
+                            this.bindingObservableItem(args.detail.name, i, args.detail.objectValue[i], prop);
                     }
                     else {
-                        this.bindingObservableItem(args.detail.name, 0, args.detail.value);
+                        this.bindingObservableItem(args.detail.name, 0, args.detail.objectValue, prop);
                     }
                 }
             }
@@ -194,17 +169,46 @@ var ModelProperty = (function () {
                     this.bindings[bindingName].dispatchChangeEvent();
             }
     };
-    ModelProperty.prototype.bindingObservableItem = function (propName, index, item) {
+    ModelProperty.prototype.bindingObservableItem = function (propName, index, item, bindName) {
         if (!this.bindings[propName] || this._template == undefined)
             return;
         var element = this._template.cloneNode(true);
         this.component.appendChild(element);
-        var newModel = new ModelView(propName + "_" + index, item, element, propName);
-        //var newMdProp = new ModelProperty(newModel, <HTMLElement>element);
-        //newModel.properties.push(newMdProp);
+        var newModel = new ModelView(propName + "_" + index, item, element, bindName);
         this.modelView.subModels.push(newModel);
-        //for (var bindName in newMdProp.bindings)
-        //	newMdProp.bindings[bindName].dispatchChangeEvent();
+    };
+    ModelProperty.prototype.getComponentBinding = function (bindName) {
+        var prop = "";
+        for (var bind in this.componentBindings)
+            if (bindName == this.componentBindings[bind]) {
+                prop = bind;
+                break;
+            }
+        return prop;
+    };
+    ModelProperty.prototype.syncComponentChange = function (comp, attrName) {
+        if (comp instanceof HTMLElement) {
+            for (var compBind in this.componentBindings) {
+                var auxCompBind = compBind;
+                if (compBind.indexOf('.') != -1)
+                    auxCompBind = auxCompBind.split('.')[0];
+                if (auxCompBind === attrName) {
+                    var internalComponent = comp;
+                    if (compBind.indexOf('.') != -1) {
+                        var internalProps = compBind.split('.');
+                        auxCompBind = internalProps[internalProps.length - 1];
+                        internalProps = internalProps.slice(0, internalProps.length - 1);
+                        internalProps.forEach(function (n) {
+                            if (!internalComponent[n])
+                                internalComponent[n] = {};
+                            internalComponent = internalComponent[n];
+                        });
+                    }
+                    this.pendingSync[compBind] = internalComponent[auxCompBind];
+                    break;
+                }
+            }
+        }
     };
     ModelProperty.prototype.createPropertyBinding = function () {
         for (var propKey in this.componentBindings) {

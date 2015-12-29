@@ -24,7 +24,7 @@ var ObservableArray = (function (_super) {
     });
     ObservableArray.prototype.initialize = function (items) {
         var _this = this;
-        items.forEach(function (n) { return _this.push(n); });
+        items.forEach(function (n) { return _super.prototype.push.call(_this, n); });
     };
     ObservableArray.prototype.push = function () {
         var _this = this;
