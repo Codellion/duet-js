@@ -1,0 +1,31 @@
+{
+  "name": "duet-js",
+  "version": "1.0.0",
+  "description": "MVVM Javascript framework",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Codellion/duet-js.git"
+  },
+  "keywords": [
+    "MVVM"
+  ],
+  "author": "Antonio Fernández Castillo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Codellion/duet-js/issues"
+  },
+  "homepage": "https://github.com/Codellion/duet-js#readme",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-concat": "^0.5.1",
+    "grunt-contrib-jshint": "^0.11.3",
+    "grunt-contrib-uglify": "^0.11.0"
+  }
+}
