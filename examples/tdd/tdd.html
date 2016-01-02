@@ -31,8 +31,7 @@
 				else
 					tdd.model.tasks.push({ done: false, description: tdd.model.task, selectTask: selTask });
 
-				tdd.model.task = "";
-				tdd.model.isSelectTask = false;
+				tdd.model.cleanTask();
 			})
 		};
 
@@ -57,7 +56,8 @@
 		<ul data-dt="tdd" data-dt-children="#var force = this.showArchiveTasks; this.tasks.filter(n => !n.done || force)">
 			<il>
 				<input type="checkbox" data-dt="children" data-dt-checked="done" />				
-				<span data-dt="children" data-dt-innerHTML="description" data-dt-onclick="@this.selectTask()"></span>
+				<span data-dt="children" data-dt-innerHTML="description" data-dt-style.text-decoration="#this.done? 'line-through': ''"
+					 data-dt-onclick="@this.selectTask()"></span>
 				<br />
 			</il>
 		</ul>
