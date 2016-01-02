@@ -57,12 +57,16 @@ class ModelView<T> {
 		if(model) {
 			this.model = model;
 			if (!model["mutated-observation"])
-				this.createObservableObject(this.model);
+				this.createObservableObject(this.model, this.modelName);
 			else {
 				var auxAccesor = model["mutated-accesors"];
 
-				for (var i in auxAccesor)
-					this.bindings[auxAccesor[i]] = model["_" + auxAccesor[i]];
+				for (var i in auxAccesor){
+					var newBindName = this.modelName + '|' + auxAccesor[i];
+					var oldBind = model["_" + auxAccesor[i]];
+					oldBind.name = this.modelName + '|' + auxAccesor[i];
+					this.bindings[newBindName] = oldBind;
+				}
 			}
 		}
 
@@ -98,7 +102,7 @@ class ModelView<T> {
 
 
 	private createObservableObject(obj: any, parentName?: string): void {
-		if (typeof (obj) !== "object" || obj["mutated-observation"])
+		if (typeof (obj) !== "object" || (obj && obj["mutated-observation"]))
 			return;
 
 		var parentPropName = "";
@@ -114,17 +118,21 @@ class ModelView<T> {
 		for (var objProp in oriProps) {
 			var propertyName = oriProps[objProp];
 			if (propertyName.indexOf('_') != 0 && typeof (obj[propertyName]) !== "function"
-				&& propertyName !== "mutated-accesors" && propertyName.indexOf('$') != 0) {
-				var result: BindableProperty = this.bindings[propertyName];
+			&& propertyName !== "mutated-accesors" && propertyName.indexOf('$') != 0) {
+
+				var propertyBindName = parentPropName + "|" + propertyName;
+
+				var result: BindableProperty = this.bindings[propertyBindName];
+
 				if (typeof (result) === "undefined") {
-					result = new BindableProperty(propertyName,
-						this.modelName + "_" + parentPropName + "_" + propertyName,
+					result = new BindableProperty(propertyBindName, propertyName,
 						obj[propertyName], obj, true);
 				}
 
 				ModelProperty.createAccesorProperty(propertyName, obj, result);
-				this.createObservableObject(obj[propertyName], propertyName);
-				this.bindings[propertyName] = result;
+
+				this.createObservableObject(obj[propertyName], propertyBindName);
+				this.bindings[propertyBindName] = result;
 
 				document.addEventListener(result.propertyChangeEvent,
 					(args: CustomEvent) => {
@@ -133,7 +141,7 @@ class ModelView<T> {
 
 							if (obj["_parentReference"] && obj["_parentReference"]._binding) {
 								this.dispatchEvents.push(args.detail.propertyChangeEvent);
-								obj["_parentReference"]._binding.dispatchChangeEvent(args.detail.name);
+								obj["_parentReference"]._binding.dispatchChangeEvent(args.detail.internalExpression);
 							}
 						}
 						
@@ -151,10 +159,20 @@ class ModelView<T> {
 		if (args.detail["_externalReference"] && args.detail["_externalReference"] != null)
 			name = args.detail["_externalReference"];
 
+		if(name.indexOf('|') !== -1){
+			name = name.replace(this.modelName + '|', '').replace('|', '.');
+		}
+
+		if (name.indexOf('#') == 0)
+			return;
+
 		for(var bindingName in this.bindings) {
-			if (bindingName.indexOf('#') == 0 && bindingName !== name) {
-				if (this.containsBindReference(bindingName, name))
-					this.bindings[bindingName].dispatchChangeEvent();
+			var binding = this.bindings[bindingName];
+			
+			if (binding.internalExpression.indexOf('#') == 0 && binding.internalExpression !== name) {
+
+				if (this.containsBindReference(binding.internalExpression, name))
+					binding.dispatchChangeEvent();
 			}
 		}
 	}

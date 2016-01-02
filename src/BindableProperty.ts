@@ -7,7 +7,7 @@ class BindableProperty {
 	template: HTMLElement;
 	dirty: boolean = false;
 
-	private _hashEventName: string;
+	private _internalExpression: string;
 	private _tempValue: any;
 	private _value: any;
 	private _parentValue: any;
@@ -17,6 +17,10 @@ class BindableProperty {
 	private _functions: DOMStringMap;
 
 	propertyChange: CustomEvent;
+
+	get internalExpression(): string {
+		return this._internalExpression;
+	}
 
 	get dispatchEvents(): Array<string> {
 		if (!window["dt-dispatchEvents"])
@@ -29,14 +33,16 @@ class BindableProperty {
 		if (this._parseInProgress)
 			return null;
 
-		if((this.name.indexOf('#') == 0 || this.name.indexOf('@') == 0) && this.dirty == true) {
-			var func = this.name.slice(1);
+		var propName = this.name;
+
+		if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && this.dirty == true) {
+			var func = this._internalExpression.slice(1);
 			var result: any = null;
 
 			if (func.indexOf("=>") != -1)
 				func = DynamicCode.parseLambdaExpression(func);
 
-			if (this.name.indexOf('@') == 0){
+			if (this._internalExpression.indexOf('@') == 0) {
 				this._eventExpresion = func;		
 				var _this = this;
 				result = (function() { 
@@ -87,7 +93,7 @@ class BindableProperty {
 					var mutatedProp = auxAccesors[i];
 					var oldProp = obj['_' + mutatedProp];
 					ModelProperty.createAccesorProperty(mutatedProp, obj, 
-						new BindableProperty(mutatedProp, oldProp["_hashEventName"], oldProp["_value"], obj));
+						new BindableProperty(mutatedProp, oldProp["_internalExpression"], oldProp["_value"], obj));
 				}
 			}
 
@@ -106,24 +112,16 @@ class BindableProperty {
 		this._value = value;
     }
 
-    get hashEventName(): string {
-		return this._hashEventName;
-	}
-
-	set hashEventName(value: string) {
-		this._hashEventName = value;
-	}
-
 	get propertyChangeEvent(): string {
-		return "propertyChange" + this.hashEventName;
+		return "propertyChange" + this.name;
 	}
 	
-	constructor(propertyName: string, hashEventName: string, value: any, parentValue: any, isIndependent?: boolean) {
+	constructor(propertyName: string, internalExpression: string, value: any, parentValue: any, isIndependent?: boolean) {
 		this.name = propertyName;
+		this._internalExpression = internalExpression;
 		this._tempValue = null;
 		this._parentValue = parentValue;
 		this._externalReference = null;
-		this.hashEventName = hashEventName;
 		this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
 
 		if(Array.isArray(value) || value instanceof ObservableArray) {

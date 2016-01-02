@@ -24,11 +24,15 @@ var ModelView = (function () {
         if (model) {
             this.model = model;
             if (!model["mutated-observation"])
-                this.createObservableObject(this.model);
+                this.createObservableObject(this.model, this.modelName);
             else {
                 var auxAccesor = model["mutated-accesors"];
-                for (var i in auxAccesor)
-                    this.bindings[auxAccesor[i]] = model["_" + auxAccesor[i]];
+                for (var i in auxAccesor) {
+                    var newBindName = this.modelName + '|' + auxAccesor[i];
+                    var oldBind = model["_" + auxAccesor[i]];
+                    oldBind.name = this.modelName + '|' + auxAccesor[i];
+                    this.bindings[newBindName] = oldBind;
+                }
             }
         }
         if (modelName) {
@@ -87,7 +91,7 @@ var ModelView = (function () {
     });
     ModelView.prototype.createObservableObject = function (obj, parentName) {
         var _this = this;
-        if (typeof (obj) !== "object" || obj["mutated-observation"])
+        if (typeof (obj) !== "object" || (obj && obj["mutated-observation"]))
             return;
         var parentPropName = "";
         if (parentName)
@@ -99,19 +103,20 @@ var ModelView = (function () {
             var propertyName = oriProps[objProp];
             if (propertyName.indexOf('_') != 0 && typeof (obj[propertyName]) !== "function"
                 && propertyName !== "mutated-accesors" && propertyName.indexOf('$') != 0) {
-                var result = this.bindings[propertyName];
+                var propertyBindName = parentPropName + "|" + propertyName;
+                var result = this.bindings[propertyBindName];
                 if (typeof (result) === "undefined") {
-                    result = new BindableProperty(propertyName, this.modelName + "_" + parentPropName + "_" + propertyName, obj[propertyName], obj, true);
+                    result = new BindableProperty(propertyBindName, propertyName, obj[propertyName], obj, true);
                 }
                 ModelProperty.createAccesorProperty(propertyName, obj, result);
-                this.createObservableObject(obj[propertyName], propertyName);
-                this.bindings[propertyName] = result;
+                this.createObservableObject(obj[propertyName], propertyBindName);
+                this.bindings[propertyBindName] = result;
                 document.addEventListener(result.propertyChangeEvent, function (args) {
                     if (!_this.isInitialization) {
                         _this.checkBindDependencies(args);
                         if (obj["_parentReference"] && obj["_parentReference"]._binding) {
                             _this.dispatchEvents.push(args.detail.propertyChangeEvent);
-                            obj["_parentReference"]._binding.dispatchChangeEvent(args.detail.name);
+                            obj["_parentReference"]._binding.dispatchChangeEvent(args.detail.internalExpression);
                         }
                     }
                 }, false);
@@ -124,10 +129,16 @@ var ModelView = (function () {
         var name = args.detail.name;
         if (args.detail["_externalReference"] && args.detail["_externalReference"] != null)
             name = args.detail["_externalReference"];
+        if (name.indexOf('|') !== -1) {
+            name = name.replace(this.modelName + '|', '').replace('|', '.');
+        }
+        if (name.indexOf('#') == 0)
+            return;
         for (var bindingName in this.bindings) {
-            if (bindingName.indexOf('#') == 0 && bindingName !== name) {
-                if (this.containsBindReference(bindingName, name))
-                    this.bindings[bindingName].dispatchChangeEvent();
+            var binding = this.bindings[bindingName];
+            if (binding.internalExpression.indexOf('#') == 0 && binding.internalExpression !== name) {
+                if (this.containsBindReference(binding.internalExpression, name))
+                    binding.dispatchChangeEvent();
             }
         }
     };

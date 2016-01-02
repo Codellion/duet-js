@@ -2,13 +2,13 @@
 /// <reference path="ModelProperty.ts" />
 /// <reference path="DynamicCode.ts" />
 var BindableProperty = (function () {
-    function BindableProperty(propertyName, hashEventName, value, parentValue, isIndependent) {
+    function BindableProperty(propertyName, internalExpression, value, parentValue, isIndependent) {
         this.dirty = false;
         this.name = propertyName;
+        this._internalExpression = internalExpression;
         this._tempValue = null;
         this._parentValue = parentValue;
         this._externalReference = null;
-        this.hashEventName = hashEventName;
         this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
         if (Array.isArray(value) || value instanceof ObservableArray) {
             if (Array.isArray(value)) {
@@ -28,6 +28,13 @@ var BindableProperty = (function () {
             this.value = value;
         }
     }
+    Object.defineProperty(BindableProperty.prototype, "internalExpression", {
+        get: function () {
+            return this._internalExpression;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(BindableProperty.prototype, "dispatchEvents", {
         get: function () {
             if (!window["dt-dispatchEvents"])
@@ -41,12 +48,13 @@ var BindableProperty = (function () {
         get: function () {
             if (this._parseInProgress)
                 return null;
-            if ((this.name.indexOf('#') == 0 || this.name.indexOf('@') == 0) && this.dirty == true) {
-                var func = this.name.slice(1);
+            var propName = this.name;
+            if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && this.dirty == true) {
+                var func = this._internalExpression.slice(1);
                 var result = null;
                 if (func.indexOf("=>") != -1)
                     func = DynamicCode.parseLambdaExpression(func);
-                if (this.name.indexOf('@') == 0) {
+                if (this._internalExpression.indexOf('@') == 0) {
                     this._eventExpresion = func;
                     var _this = this;
                     result = (function () {
@@ -82,7 +90,7 @@ var BindableProperty = (function () {
                     for (var i in auxAccesors) {
                         var mutatedProp = auxAccesors[i];
                         var oldProp = obj['_' + mutatedProp];
-                        ModelProperty.createAccesorProperty(mutatedProp, obj, new BindableProperty(mutatedProp, oldProp["_hashEventName"], oldProp["_value"], obj));
+                        ModelProperty.createAccesorProperty(mutatedProp, obj, new BindableProperty(mutatedProp, oldProp["_internalExpression"], oldProp["_value"], obj));
                     }
                 }
                 return obj;
@@ -100,19 +108,9 @@ var BindableProperty = (function () {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(BindableProperty.prototype, "hashEventName", {
-        get: function () {
-            return this._hashEventName;
-        },
-        set: function (value) {
-            this._hashEventName = value;
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(BindableProperty.prototype, "propertyChangeEvent", {
         get: function () {
-            return "propertyChange" + this.hashEventName;
+            return "propertyChange" + this.name;
         },
         enumerable: true,
         configurable: true

@@ -82,7 +82,10 @@ class ModelProperty<T> {
 
 					bindName = bindName.replace("html", "HTML");
 
-					this.componentBindings[bindName] = bindValue;
+					if (bindValue.indexOf('#') === -1)
+						bindValue = bindValue.replace('.', '|');
+
+					this.componentBindings[bindName] = this.modelView.modelName + "|" + bindValue;
 					binding = true;
 				}
 			}
@@ -188,25 +191,30 @@ class ModelProperty<T> {
 
 	private bindingObservableItem(propName: string, index: number, item: any, bindName: string) {
 		if (!this.bindings[propName] || this._template == undefined)
-			return;
+			return
 
-		if (this.modelView.subModels.some(n => n.modelName === propName + "_" + index)) {
+		var newModelName = this.modelView.modelName + "|" + propName + "|" + index;
+
+		if (this.modelView.subModels.some(n => n.modelName === newModelName)) {
 			var subIndex = null;
 			var i = -1;
 			this.modelView.subModels.forEach(n => {
 				i++
-				if (n.modelName == propName + "_" + index) subIndex = i;
+				if (n.modelName == newModelName) {
+					subIndex = i;
+				}
 			});
 
-			if(subIndex > -1)
-				this.modelView.subModels = this.modelView.subModels.slice(subIndex, 1);
+			if (subIndex > -1) {
+				this.modelView.subModels[subIndex].bindings = {};
+				this.modelView.subModels.splice(subIndex, 1);
+			}
 		}
 
 		var element = this._template.cloneNode(true);
-		element["data-id"] = propName + "_" + index;
 		this.component.appendChild(element);
 
-		var newModel = new ModelView(propName + "_" + index, item, <HTMLElement>element, bindName);
+		var newModel = new ModelView(newModelName, item, <HTMLElement>element, bindName);
 		this.modelView.subModels.push(newModel);
 	}
 
@@ -265,8 +273,14 @@ class ModelProperty<T> {
 				var parentPropName = "";
 				var propName = propertyName;
 
-				if (propertyName.indexOf('#') != 0 && propertyName.indexOf('@') != 0 && propertyName.indexOf('.') != -1) {
-					var internalProps = propertyName.split('.');
+				if (propName.indexOf('|') !== -1) {
+					propName = propName.replace(this.modelView.modelName + '|', '');
+					if(propName.indexOf('#') === -1)
+						propName = propName.replace('|', '.');
+				}
+
+				if (propName.indexOf('#') != 0 && propName.indexOf('@') != 0 && propName.indexOf('.') != -1) {
+					var internalProps = propName.split('.');
 					parentPropName = internalProps[internalProps.length - 2];
 					propName = internalProps[internalProps.length - 1];
 					internalProps = internalProps.slice(0, internalProps.length - 1);
@@ -279,9 +293,7 @@ class ModelProperty<T> {
 					});
 				}
 
-				result = new BindableProperty(propertyName, 
-					this.modelView.modelName + "_" + parentPropName + "_" + propertyName, 
-					source[propName], source);
+				result = new BindableProperty(propertyName, propName, source[propName], source);
 
 				ModelProperty.createAccesorProperty(propName, source, result);
 
@@ -354,13 +366,13 @@ class ModelProperty<T> {
 			configurable: true
 		});
 
-		Object.defineProperty(source, "$" + propertyName, {
+		/*Object.defineProperty(source, "$" + propertyName, {
 			get: function() {
 				return this[privateProp].objectValue;
 			},
 			enumerable: true,
 			configurable: true
-		});
+		});*/
 
 		if (!source['mutated-accesors'])
 			source['mutated-accesors'] = [];
