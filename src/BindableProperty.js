@@ -2,16 +2,21 @@
 /// <reference path="ModelProperty.ts" />
 /// <reference path="DynamicCode.ts" />
 var BindableProperty = (function () {
-    function BindableProperty(propertyName, hashEventName, value, parentValue) {
+    function BindableProperty(propertyName, hashEventName, value, parentValue, isIndependent) {
         this.dirty = false;
         this.name = propertyName;
         this._tempValue = null;
         this._parentValue = parentValue;
+        this._externalReference = null;
         this.hashEventName = hashEventName;
         this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
         if (Array.isArray(value) || value instanceof ObservableArray) {
             if (Array.isArray(value)) {
-                var obsArr = new ObservableArray(propertyName);
+                var obsArr = null;
+                if (!isIndependent)
+                    obsArr = new ObservableArray(propertyName);
+                else
+                    obsArr = new ObservableArray(propertyName, this);
                 obsArr.initialize(value);
                 this.value = obsArr;
             }
@@ -23,31 +28,33 @@ var BindableProperty = (function () {
             this.value = value;
         }
     }
+    Object.defineProperty(BindableProperty.prototype, "dispatchEvents", {
+        get: function () {
+            if (!window["dt-dispatchEvents"])
+                window["dt-dispatchEvents"] = [];
+            return window["dt-dispatchEvents"];
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(BindableProperty.prototype, "value", {
         get: function () {
             if (this._parseInProgress)
                 return null;
-            if (this.name.indexOf('#') == 0 && this.dirty == true) {
+            if ((this.name.indexOf('#') == 0 || this.name.indexOf('@') == 0) && this.dirty == true) {
                 var func = this.name.slice(1);
                 var result = null;
                 if (func.indexOf("=>") != -1)
                     func = DynamicCode.parseLambdaExpression(func);
-                result = DynamicCode.evalInContext(func, this._parentValue);
-                if (typeof result == "object") {
-                    this._parseInProgress = true;
-                    var cache = [];
-                    result = JSON.stringify(result, function (key, value) {
-                        if (typeof value === 'object' && value !== null) {
-                            if (cache.indexOf(value) !== -1) {
-                                return;
-                            }
-                            cache.push(value);
-                        }
-                        return value;
+                if (this.name.indexOf('@') == 0) {
+                    this._eventExpresion = func;
+                    var _this = this;
+                    result = (function () {
+                        return DynamicCode.evalInContext(_this._eventExpresion, _this._parentValue);
                     });
-                    cache = null;
-                    this._parseInProgress = false;
-                    result = "#JSON#" + result;
+                }
+                else {
+                    result = DynamicCode.evalInContext(func, this._parentValue);
                 }
                 this._value = result;
                 this.dirty = false;
@@ -109,10 +116,14 @@ var BindableProperty = (function () {
         enumerable: true,
         configurable: true
     });
-    BindableProperty.prototype.dispatchChangeEvent = function () {
+    BindableProperty.prototype.dispatchChangeEvent = function (argName) {
+        if (this.dispatchEvents.indexOf(this.propertyChangeEvent) !== -1)
+            return;
+        if (argName)
+            this._externalReference = argName;
         this.dirty = true;
+        var elIndex = this.dispatchEvents.push(this.propertyChangeEvent);
         document.dispatchEvent(this.propertyChange);
-        this.dirty = false;
     };
     return BindableProperty;
 })();

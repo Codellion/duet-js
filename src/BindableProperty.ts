@@ -12,38 +12,57 @@ class BindableProperty {
 	private _value: any;
 	private _parentValue: any;
 	private _parseInProgress: boolean;
+	private _eventExpresion: string;
+	private _externalReference: string;
+	private _functions: DOMStringMap;
 
 	propertyChange: CustomEvent;
+
+	get dispatchEvents(): Array<string> {
+		if (!window["dt-dispatchEvents"])
+			window["dt-dispatchEvents"] = [];
+
+		return <Array<string>>window["dt-dispatchEvents"];
+	}
 
 	get value(): any {
 		if (this._parseInProgress)
 			return null;
 
-		if(this.name.indexOf('#') == 0 && this.dirty == true) {
+		if((this.name.indexOf('#') == 0 || this.name.indexOf('@') == 0) && this.dirty == true) {
 			var func = this.name.slice(1);
 			var result: any = null;
 
 			if (func.indexOf("=>") != -1)
 				func = DynamicCode.parseLambdaExpression(func);
 
-			result = DynamicCode.evalInContext(func, this._parentValue);
+			if (this.name.indexOf('@') == 0){
+				this._eventExpresion = func;		
+				var _this = this;
+				result = (function() { 
+					return DynamicCode.evalInContext(_this._eventExpresion, _this._parentValue); 
+				});				
+			}
+			else {
+				result = DynamicCode.evalInContext(func, this._parentValue);
 
-			if (typeof result == "object") {
-				this._parseInProgress = true;
-				var cache = [];
-				result = JSON.stringify(result, function(key, value) {
-				    if (typeof value === 'object' && value !== null) {
-				        if (cache.indexOf(value) !== -1) {
-				            return;
-				        }
-				        cache.push(value);
-				    }
-				    return value;
-				});
-				cache = null; 
-				this._parseInProgress = false;
+				/*if (typeof result == "object") {
+					this._parseInProgress = true;
+					var cache = [];
+					result = JSON.stringify(result, function(key, value) {
+						if (typeof value === 'object' && value !== null) {
+							if (cache.indexOf(value) !== -1) {
+								return;
+							}
+							cache.push(value);
+						}
+						return value;
+					});
+					cache = null;
+					this._parseInProgress = false;
 
-				result = "#JSON#" + result;
+					result = "#JSON#" + result;
+				}*/
 			}
 
 			this._value = result;
@@ -98,16 +117,22 @@ class BindableProperty {
 		return "propertyChange" + this.hashEventName;
 	}
 	
-	constructor(propertyName: string, hashEventName: string, value: any, parentValue: any) {
+	constructor(propertyName: string, hashEventName: string, value: any, parentValue: any, isIndependent?: boolean) {
 		this.name = propertyName;
 		this._tempValue = null;
 		this._parentValue = parentValue;
+		this._externalReference = null;
 		this.hashEventName = hashEventName;
 		this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
 
 		if(Array.isArray(value) || value instanceof ObservableArray) {
 			if (Array.isArray(value)) {
-				var obsArr = new ObservableArray(propertyName);
+				var obsArr: ObservableArray<any> = null;
+				if (!isIndependent)
+					obsArr = new ObservableArray(propertyName);
+				else
+					obsArr = new ObservableArray(propertyName, this);
+
 				obsArr.initialize(value);
 				this.value = obsArr;
 			}
@@ -120,9 +145,15 @@ class BindableProperty {
 		}
 	}
 
-	dispatchChangeEvent() {
+	dispatchChangeEvent(argName?: string) {
+		if (this.dispatchEvents.indexOf(this.propertyChangeEvent) !== -1)
+			return;
+
+		if (argName)
+			this._externalReference = argName;
+
 		this.dirty = true;
+		var elIndex = this.dispatchEvents.push(this.propertyChangeEvent);
 		document.dispatchEvent(this.propertyChange);
-		this.dirty = false;
 	}
 }

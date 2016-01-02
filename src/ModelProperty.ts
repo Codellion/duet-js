@@ -6,10 +6,23 @@ class ModelProperty<T> {
 	private _modelView: ModelView<T>;
 	private _template: HTMLElement;
 	
+	internalBindings: IDictionary<BindableProperty>;
 	componentBindings: DOMStringMap;
 	pendingSync: DOMStringMap;
 
 	componentSync: CustomEvent;
+
+
+	get dispatchEvents(): Array<string> {
+		if (!window["dt-dispatchEvents"])
+			window["dt-dispatchEvents"] = [];
+
+		return <Array<string>>window["dt-dispatchEvents"];
+	}
+
+	set dispatchEvents(value: Array<string>) {
+		window["dt-dispatchEvents"] = value;
+	}
 
 	get bindings(): IDictionary<BindableProperty> {
 		return this._modelView.bindings;
@@ -40,14 +53,22 @@ class ModelProperty<T> {
 		observer.observe(this._component, config);
 	
         this._component.onchange = () => {
-			if (typeof (instance.component["value"]) != undefined)
-				this.pendingSync["value"] = instance.component["value"];
+			this.dispatchEvents = [];
+			for(var compBind in instance.componentBindings){
+				if (typeof (instance.component[compBind]) != undefined)
+					this.pendingSync[compBind] = instance.component[compBind];	
+			}
+			
 			this.syncDependencies(instance);
         };
 
         this._component.onkeyup = () => {
-			if (typeof (instance.component["value"]) != undefined)
-				this.pendingSync["value"] = instance.component["value"];
+			this.dispatchEvents = [];
+			for (var compBind in instance.componentBindings) {
+				if (typeof (instance.component[compBind]) != undefined)
+					this.pendingSync[compBind] = instance.component[compBind];
+			}
+
 			this.syncDependencies(instance);
         };
     }
@@ -57,6 +78,7 @@ class ModelProperty<T> {
 		this.component = component;
 		this.componentBindings = {};
 		this.pendingSync = {};
+		this.internalBindings = {};
 
 		var binding = false;
 
@@ -89,31 +111,7 @@ class ModelProperty<T> {
 				var propName = this.componentBindings[bindableProp];
 				var bindProperty = this.bindings[propName];
 
-				document.addEventListener(bindProperty.propertyChangeEvent, 
-					(e: CustomEvent) => this.onBindingChange(<CustomEvent>e), false);
-
-				if (this.bindings[propName].objectValue instanceof ObservableArray) {
-					document.addEventListener(propName + "elementAdded",(e: CustomEvent) => {
-						if(e.detail instanceof ObservableItem) {
-							var prop = this.getComponentBinding(e.detail.name);
-
-							this.bindingObservableItem(e.detail.name, e.detail.index, e.detail.item, prop);
-						}						
-					});
-
-					document.addEventListener(propName + "elementRemoved", (e: CustomEvent) => {
-						if (e.detail instanceof ObservableItem) {
-							var prop = this.getComponentBinding(e.detail.name);
-
-							if(prop != null) {
-								if (this.component[prop][e.detail.index].remove)
-									this.component[prop][e.detail.index].remove();
-								else
-									this.component.removeChild(this.component.children[e.detail.index]);
-							}
-						}
-					});
-				}
+				this.listenChangeEvents(propName, bindProperty);
 			}
 
 			this.component.addEventListener("componentSync", (e: CustomEvent) => {
@@ -152,6 +150,34 @@ class ModelProperty<T> {
 		this.componentSync = new CustomEvent("componentSync", { detail: this });
 	}
 
+	private listenChangeEvents(propName: string, bindProperty: BindableProperty): void {
+		document.addEventListener(bindProperty.propertyChangeEvent,
+			(e: CustomEvent) => this.onBindingChange(<CustomEvent>e), false);
+
+		if (this.bindings[propName].objectValue instanceof ObservableArray) {
+			document.addEventListener(propName + "elementAdded", (e: CustomEvent) => {
+				if (e.detail instanceof ObservableItem) {
+					var prop = this.getComponentBinding(e.detail.name);
+
+					this.bindingObservableItem(e.detail.name, e.detail.index, e.detail.item, prop);
+				}
+			});
+
+			document.addEventListener(propName + "elementRemoved", (e: CustomEvent) => {
+				if (e.detail instanceof ObservableItem) {
+					var prop = this.getComponentBinding(e.detail.name);
+
+					if (prop != null) {
+						if (this.component[prop][e.detail.index].remove)
+							this.component[prop][e.detail.index].remove();
+						else
+							this.component.removeChild(this.component.children[e.detail.index]);
+					}
+				}
+			});
+		}
+	}
+
 	private syncDependencies(instance: ModelProperty<T>): void {
 		if(!this.modelView.isInitialization)
 			instance.component.dispatchEvent(instance.componentSync);
@@ -161,8 +187,17 @@ class ModelProperty<T> {
 	private onBindingChange(args: CustomEvent): void {
 		args.preventDefault();
 
+		this.setComponentBinding(args.detail);		
+
+		if (!this.modelView.isInitialization){			
+			this.modelView.checkBindDependencies(args);
+		}
+	}
+
+	setComponentBinding(binding: BindableProperty): void {
+		binding.dirty = true;
 		var internalComponent = this.component;
-		var prop = this.getComponentBinding(args.detail.name);
+		var prop = this.getComponentBinding(binding.name);
 
 		if (prop != null && prop.indexOf('.') != -1) {
 			var internalProps = prop.split('.');
@@ -178,40 +213,47 @@ class ModelProperty<T> {
 		}
 
 		if (typeof (internalComponent[prop]) != undefined) {
-			if (internalComponent[prop].__proto__ == HTMLCollection.prototype) {
-				if (this.bindings[args.detail.name].dirty) {
-					for (var j = internalComponent[prop].length - 1; j > -1; j--)
-						if(internalComponent[prop][j].remove)
+			if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
+				if (binding.dirty) {
+					for (var j = internalComponent[prop].length - 1; j > -1; j--) {
+						if (internalComponent[prop][j].remove)
 							internalComponent[prop][j].remove();
 						else
 							this.component.removeChild(this.component.children[j]);
+					}
 
-					if (Array.isArray(args.detail.objectValue) || args.detail.objectValue instanceof ObservableArray) {
-						for (var i = 0; i < args.detail.objectValue.length; i++)
-							this.bindingObservableItem(args.detail.name, i, args.detail.objectValue[i], prop);
+					if (Array.isArray(binding.objectValue) || binding.objectValue instanceof ObservableArray) {
+						for (var i = 0; i < binding.objectValue.length; i++)
+							this.bindingObservableItem(binding.name, i, binding.objectValue[i], prop);
 					}
 					else {
-						this.bindingObservableItem(args.detail.name, 0, args.detail.objectValue, prop);
-					}					
-				}				
+						this.bindingObservableItem(binding.name, 0, binding.objectValue, prop);
+					}
+				}
 			}
-			else
-				internalComponent[prop] = args.detail.value;
+			else if (typeof (binding.value) !== "undefined")
+				internalComponent[prop] = binding.value;
 		}
-
-		if(!this.modelView.isInitialization)
-			for (var bindingName in this.bindings) {
-				if (bindingName.indexOf('#') == 0 && bindingName.indexOf(args.detail.name) != -1
-					&& bindingName !== args.detail.name)
-					this.bindings[bindingName].dispatchChangeEvent();
-			}
 	}
 
 	private bindingObservableItem(propName: string, index: number, item: any, bindName: string) {
 		if (!this.bindings[propName] || this._template == undefined)
 			return;
 
+		if (this.modelView.subModels.some(n => n.modelName === propName + "_" + index)) {
+			var subIndex = null;
+			var i = -1;
+			this.modelView.subModels.forEach(n => {
+				i++
+				if (n.modelName == propName + "_" + index) subIndex = i;
+			});
+
+			if(subIndex > -1)
+				this.modelView.subModels = this.modelView.subModels.slice(subIndex, 1);
+		}
+
 		var element = this._template.cloneNode(true);
+		element["data-id"] = propName + "_" + index;
 		this.component.appendChild(element);
 
 		var newModel = new ModelView(propName + "_" + index, item, <HTMLElement>element, bindName);
@@ -266,13 +308,14 @@ class ModelProperty<T> {
 
 			if (this.bindings && this.bindings[propertyName]) {
 				result = this.bindings[propertyName];
+				this.internalBindings[propertyName] = result;
 			}
 			else {
 				var source = this.modelView.model;
 				var parentPropName = "";
 				var propName = propertyName;
 
-				if (propertyName.indexOf('#') != 0 && propertyName.indexOf('.') != -1) {
+				if (propertyName.indexOf('#') != 0 && propertyName.indexOf('@') != 0 && propertyName.indexOf('.') != -1) {
 					var internalProps = propertyName.split('.');
 					parentPropName = internalProps[internalProps.length - 2];
 					propName = internalProps[internalProps.length - 1];
@@ -295,6 +338,7 @@ class ModelProperty<T> {
 				if (!this.bindings)
 					this.bindings = {};
 
+				this.internalBindings[propertyName] = result;
 				this.bindings[propertyName] = result;
 			}
 		}

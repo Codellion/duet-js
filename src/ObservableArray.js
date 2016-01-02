@@ -4,20 +4,28 @@ var __extends = (this && this.__extends) || function (d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 /// <reference path="ObservableItem.ts" />
+/// <reference path="BindableProperty.ts" />
 var ObservableArray = (function (_super) {
     __extends(ObservableArray, _super);
-    function ObservableArray(name) {
-        var items = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            items[_i - 1] = arguments[_i];
-        }
+    function ObservableArray(name, binding) {
         var _self = this;
         _super.call(this);
         this._name = name;
+        if (binding)
+            this._binding = binding;
+        else
+            this._binding = null;
     }
     Object.defineProperty(ObservableArray.prototype, "name", {
         get: function () {
             return this._name;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ObservableArray.prototype, "propertyChangeEvent", {
+        get: function () {
+            return "propertyChange" + this.name;
         },
         enumerable: true,
         configurable: true
@@ -34,17 +42,26 @@ var ObservableArray = (function (_super) {
         }
         var res = 0;
         items.forEach(function (n) {
+            n["_parentReference"] = _this;
             res = _super.prototype.push.call(_this, n);
-            _this.elementAdded = new CustomEvent(_this.name + "elementAdded", { detail: new ObservableItem(_this.name, n, res) });
-            document.dispatchEvent(_this.elementAdded);
+            if (_this._binding === null) {
+                _this.elementAdded = new CustomEvent(_this.name + "elementAdded", { detail: new ObservableItem(_this.name, n, res) });
+                document.dispatchEvent(_this.elementAdded);
+            }
+            else
+                _this._binding.dispatchChangeEvent(null);
         });
         return res;
     };
     ObservableArray.prototype.pop = function () {
         var index = this.length - 1;
         var res = _super.prototype.pop.call(this);
-        this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, index) });
-        document.dispatchEvent(this.elementRemoved);
+        if (this._binding === null) {
+            this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, index) });
+            document.dispatchEvent(this.elementRemoved);
+        }
+        else
+            this._binding.dispatchChangeEvent(null);
         return res;
     };
     ObservableArray.prototype.unshift = function () {
@@ -55,16 +72,25 @@ var ObservableArray = (function (_super) {
         }
         var res = 0;
         items.forEach(function (n) {
+            n["_parentReference"] = _this;
             res = _super.prototype.unshift.call(_this, n);
-            _this.elementAdded = new CustomEvent(_this.name + "elementAdded", { detail: new ObservableItem(_this.name, n, res) });
-            document.dispatchEvent(_this.elementAdded);
+            if (_this._binding) {
+                _this.elementAdded = new CustomEvent(_this.name + "elementAdded", { detail: new ObservableItem(_this.name, n, res) });
+                document.dispatchEvent(_this.elementAdded);
+            }
+            else
+                _this._binding.dispatchChangeEvent(null);
         });
         return res;
     };
     ObservableArray.prototype.shift = function () {
         var res = _super.prototype.shift.call(this);
-        this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, 0) });
-        document.dispatchEvent(this.elementRemoved);
+        if (this._binding === null) {
+            this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, 0) });
+            document.dispatchEvent(this.elementRemoved);
+        }
+        else
+            this._binding.dispatchChangeEvent(null);
         return res;
     };
     ObservableArray.prototype.change = function (index, value) {

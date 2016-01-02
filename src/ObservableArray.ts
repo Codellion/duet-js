@@ -1,18 +1,29 @@
 /// <reference path="ObservableItem.ts" />
+/// <reference path="BindableProperty.ts" />
 class ObservableArray<T> extends Array<T> {
 	private _name: string;
+	private _binding: BindableProperty;
 
 	get name(): string {
 		return this._name;
 	}
 
+	get propertyChangeEvent(): string {
+		return "propertyChange" + this.name;
+	}
+
 	elementAdded: CustomEvent;
 	elementRemoved: CustomEvent;
+	propertyChange: CustomEvent;
 
-	constructor(name: string, ...items:T[]){
+	constructor(name: string, binding?: BindableProperty){
 		var _self = this;
 		super();
 		this._name = name;
+		if (binding)
+			this._binding = binding;
+		else
+			this._binding = null;
 	}
 
 	initialize(items: Array<T>): void {
@@ -22,9 +33,14 @@ class ObservableArray<T> extends Array<T> {
 	push(...items: T[]): number {
 		var res: number = 0;
 		items.forEach((n) => {
+			n["_parentReference"] = this;
 			res = super.push(n);
-			this.elementAdded = new CustomEvent(this.name + "elementAdded", { detail: new ObservableItem(this.name, n, res) });
-			document.dispatchEvent(this.elementAdded);
+			if (this._binding === null) {
+				this.elementAdded = new CustomEvent(this.name + "elementAdded", { detail: new ObservableItem(this.name, n, res) });
+				document.dispatchEvent(this.elementAdded);
+			}
+			else
+				this._binding.dispatchChangeEvent(null);
 		});
 		return res;
 	}
@@ -32,25 +48,40 @@ class ObservableArray<T> extends Array<T> {
 	pop(): T{
 		var index = this.length - 1;
 		var res = super.pop();
-		this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, index) });
-		document.dispatchEvent(this.elementRemoved);
+		if(this._binding === null){
+			this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, index) });
+			document.dispatchEvent(this.elementRemoved);
+		}
+		else
+			this._binding.dispatchChangeEvent(null);
+
 		return res;
 	}
 
 	unshift(...items: T[]): number {
 		var res: number = 0;
 		items.forEach((n) => {
+			n["_parentReference"] = this;
 			res = super.unshift(n);
-			this.elementAdded = new CustomEvent(this.name + "elementAdded", { detail: new ObservableItem(this.name, n, res) });
-			document.dispatchEvent(this.elementAdded);
+			if(this._binding) {
+				this.elementAdded = new CustomEvent(this.name + "elementAdded", { detail: new ObservableItem(this.name, n, res) });
+				document.dispatchEvent(this.elementAdded);
+			}
+			else
+				this._binding.dispatchChangeEvent(null);
 		});
 		return res;
 	}
 
 	shift(): T {
 		var res = super.shift();
-		this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, 0) });
-		document.dispatchEvent(this.elementRemoved);
+		if(this._binding === null) {
+			this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, 0) });
+			document.dispatchEvent(this.elementRemoved);
+		}
+		else
+			this._binding.dispatchChangeEvent(null);
+
 		return res;
 	}
 

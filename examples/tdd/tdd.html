@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>TDD Example</title>
+<script src="../../build/duet.js"></script>
+<script type="text/javascript">
+	var tdd = null;
+
+	window.onload = (function(){
+		var selTask = function(){
+					tdd.model.task = this.description;
+					tdd.model.selectedTask = this;
+					tdd.model.isSelectTask = true;
+				};
+
+		var model = {
+			task: null,
+			selectedTask: null,
+			isSelectTask: false,
+			showArchiveTasks: true,
+			tasks: [],		
+			cleanTask: (function(){
+				tdd.model.task = "";
+				tdd.model.selectedTask = null;
+				tdd.model.isSelectTask = false;
+			}),
+			updateTasks: (function () {
+				if(tdd.model.isSelectTask)
+					tdd.model.selectedTask.description = tdd.model.task;
+				else
+					tdd.model.tasks.push({ done: false, description: tdd.model.task, selectTask: selTask });
+
+				tdd.model.task = "";
+				tdd.model.isSelectTask = false;
+			})
+		};
+
+		tdd = new ModelView("tdd", model);
+	});
+	
+</script>
+</head>
+
+<body>
+	<div>
+		<p>Task description:</p>
+		<input type="text" data-dt="tdd" data-dt-value="task" />
+		<input type="button" data-dt="tdd" data-dt-value="#this.isSelectTask? 'Update': 'Add'" 
+			data-dt-disabled="#!this.task || this.task.length == 0" data-dt-onclick="updateTasks" />
+		<input type="button" value="clean" data-dt="tdd" data-dt-onclick="cleanTask" />
+		<p>
+			<input id="chkArchive" type="checkbox" data-dt="tdd" data-dt-checked="showArchiveTasks" />
+			<label for="chkArchive">Show archived (<span data-dt="tdd" data-dt-innerHTML="#this.tasks.filter(n => n.done).length"></span>)</label>
+		</p>
+		<p>Tasks (<span data-dt="tdd" data-dt-innerHTML="#this.showArchiveTasks? this.tasks.length : this.tasks.filter(n => !n.done).length"></span>)</p>
+		<ul data-dt="tdd" data-dt-children="#var force = this.showArchiveTasks; this.tasks.filter(n => !n.done || force)">
+			<il>
+				<input type="checkbox" data-dt="children" data-dt-checked="done" />				
+				<span data-dt="children" data-dt-innerHTML="description" data-dt-onclick="@this.selectTask()"></span>
+				<br />
+			</il>
+		</ul>
+	</div>
+</body>
+
+</html> 
