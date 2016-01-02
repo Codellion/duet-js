@@ -50,6 +50,7 @@ var BindableProperty = (function () {
                     this._eventExpresion = func;
                     var _this = this;
                     result = (function () {
+                        window["dt-dispatchEvents"] = [];
                         return DynamicCode.evalInContext(_this._eventExpresion, _this._parentValue);
                     });
                 }

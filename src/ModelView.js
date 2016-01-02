@@ -87,7 +87,7 @@ var ModelView = (function () {
     });
     ModelView.prototype.createObservableObject = function (obj, parentName) {
         var _this = this;
-        if (typeof (obj) !== "object")
+        if (typeof (obj) !== "object" || obj["mutated-observation"])
             return;
         var parentPropName = "";
         if (parentName)
@@ -97,7 +97,8 @@ var ModelView = (function () {
             oriProps.push(objProp);
         for (var objProp in oriProps) {
             var propertyName = oriProps[objProp];
-            if (propertyName.indexOf('_') != 0 && typeof (obj[propertyName]) !== "function") {
+            if (propertyName.indexOf('_') != 0 && typeof (obj[propertyName]) !== "function"
+                && propertyName !== "mutated-accesors" && propertyName.indexOf('$') != 0) {
                 var result = this.bindings[propertyName];
                 if (typeof (result) === "undefined") {
                     result = new BindableProperty(propertyName, this.modelName + "_" + parentPropName + "_" + propertyName, obj[propertyName], obj, true);

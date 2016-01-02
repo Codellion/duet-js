@@ -104,20 +104,13 @@ var ModelProperty = (function () {
             var config = { attributes: true, childList: false, characterData: true };
             observer.observe(this._component, config);
             this._component.onchange = function () {
-                _this.dispatchEvents = [];
-                for (var compBind in instance.componentBindings) {
-                    if (typeof (instance.component[compBind]) != undefined)
-                        _this.pendingSync[compBind] = instance.component[compBind];
-                }
-                _this.syncDependencies(instance);
+                ModelProperty.syncComponentEvent(instance);
+            };
+            this._component.onkeydown = function () {
+                ModelProperty.syncComponentEvent(instance);
             };
             this._component.onkeyup = function () {
-                _this.dispatchEvents = [];
-                for (var compBind in instance.componentBindings) {
-                    if (typeof (instance.component[compBind]) != undefined)
-                        _this.pendingSync[compBind] = instance.component[compBind];
-                }
-                _this.syncDependencies(instance);
+                ModelProperty.syncComponentEvent(instance);
             };
         },
         enumerable: true,
@@ -156,42 +149,6 @@ var ModelProperty = (function () {
         this.setComponentBinding(args.detail);
         if (!this.modelView.isInitialization) {
             this.modelView.checkBindDependencies(args);
-        }
-    };
-    ModelProperty.prototype.setComponentBinding = function (binding) {
-        binding.dirty = true;
-        var internalComponent = this.component;
-        var prop = this.getComponentBinding(binding.name);
-        if (prop != null && prop.indexOf('.') != -1) {
-            var internalProps = prop.split('.');
-            prop = internalProps[internalProps.length - 1];
-            internalProps = internalProps.slice(0, internalProps.length - 1);
-            internalProps.forEach(function (n) {
-                if (!internalComponent[n])
-                    internalComponent[n] = {};
-                internalComponent = internalComponent[n];
-            });
-        }
-        if (typeof (internalComponent[prop]) != undefined) {
-            if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
-                if (binding.dirty) {
-                    for (var j = internalComponent[prop].length - 1; j > -1; j--) {
-                        if (internalComponent[prop][j].remove)
-                            internalComponent[prop][j].remove();
-                        else
-                            this.component.removeChild(this.component.children[j]);
-                    }
-                    if (Array.isArray(binding.objectValue) || binding.objectValue instanceof ObservableArray) {
-                        for (var i = 0; i < binding.objectValue.length; i++)
-                            this.bindingObservableItem(binding.name, i, binding.objectValue[i], prop);
-                    }
-                    else {
-                        this.bindingObservableItem(binding.name, 0, binding.objectValue, prop);
-                    }
-                }
-            }
-            else if (typeof (binding.value) !== "undefined")
-                internalComponent[prop] = binding.value;
         }
     };
     ModelProperty.prototype.bindingObservableItem = function (propName, index, item, bindName) {
@@ -279,6 +236,42 @@ var ModelProperty = (function () {
             }
         }
     };
+    ModelProperty.prototype.setComponentBinding = function (binding) {
+        binding.dirty = true;
+        var internalComponent = this.component;
+        var prop = this.getComponentBinding(binding.name);
+        if (prop != null && prop.indexOf('.') != -1) {
+            var internalProps = prop.split('.');
+            prop = internalProps[internalProps.length - 1];
+            internalProps = internalProps.slice(0, internalProps.length - 1);
+            internalProps.forEach(function (n) {
+                if (!internalComponent[n])
+                    internalComponent[n] = {};
+                internalComponent = internalComponent[n];
+            });
+        }
+        if (typeof (internalComponent[prop]) != undefined) {
+            if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
+                if (binding.dirty) {
+                    for (var j = internalComponent[prop].length - 1; j > -1; j--) {
+                        if (internalComponent[prop][j].remove)
+                            internalComponent[prop][j].remove();
+                        else
+                            this.component.removeChild(this.component.children[j]);
+                    }
+                    if (Array.isArray(binding.objectValue) || binding.objectValue instanceof ObservableArray) {
+                        for (var i = 0; i < binding.objectValue.length; i++)
+                            this.bindingObservableItem(binding.name, i, binding.objectValue[i], prop);
+                    }
+                    else {
+                        this.bindingObservableItem(binding.name, 0, binding.objectValue, prop);
+                    }
+                }
+            }
+            else if (typeof (binding.value) !== "undefined")
+                internalComponent[prop] = binding.value;
+        }
+    };
     ModelProperty.createAccesorProperty = function (propertyName, source, property) {
         if (source['mutated-accesors'] && source['mutated-accesors'].indexOf(propertyName) != -1)
             return;
@@ -304,6 +297,14 @@ var ModelProperty = (function () {
         if (!source['mutated-accesors'])
             source['mutated-accesors'] = [];
         source['mutated-accesors'].push(propertyName);
+    };
+    ModelProperty.syncComponentEvent = function (instance) {
+        instance.dispatchEvents = [];
+        for (var compBind in instance.componentBindings) {
+            if (typeof (instance.component[compBind]) != undefined)
+                instance.pendingSync[compBind] = instance.component[compBind];
+        }
+        instance.syncDependencies(instance);
     };
     return ModelProperty;
 })();

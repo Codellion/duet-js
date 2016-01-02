@@ -53,23 +53,15 @@ class ModelProperty<T> {
 		observer.observe(this._component, config);
 	
         this._component.onchange = () => {
-			this.dispatchEvents = [];
-			for(var compBind in instance.componentBindings){
-				if (typeof (instance.component[compBind]) != undefined)
-					this.pendingSync[compBind] = instance.component[compBind];	
-			}
-			
-			this.syncDependencies(instance);
+			ModelProperty.syncComponentEvent(instance);
+        };
+
+        this._component.onkeydown = () => {
+			ModelProperty.syncComponentEvent(instance);
         };
 
         this._component.onkeyup = () => {
-			this.dispatchEvents = [];
-			for (var compBind in instance.componentBindings) {
-				if (typeof (instance.component[compBind]) != undefined)
-					this.pendingSync[compBind] = instance.component[compBind];
-			}
-
-			this.syncDependencies(instance);
+			ModelProperty.syncComponentEvent(instance);
         };
     }
 
@@ -194,48 +186,6 @@ class ModelProperty<T> {
 		}
 	}
 
-	setComponentBinding(binding: BindableProperty): void {
-		binding.dirty = true;
-		var internalComponent = this.component;
-		var prop = this.getComponentBinding(binding.name);
-
-		if (prop != null && prop.indexOf('.') != -1) {
-			var internalProps = prop.split('.');
-			prop = internalProps[internalProps.length - 1];
-			internalProps = internalProps.slice(0, internalProps.length - 1);
-
-			internalProps.forEach((n) => {
-				if (!internalComponent[n])
-					internalComponent[n] = {};
-
-				internalComponent = internalComponent[n];
-			});
-		}
-
-		if (typeof (internalComponent[prop]) != undefined) {
-			if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
-				if (binding.dirty) {
-					for (var j = internalComponent[prop].length - 1; j > -1; j--) {
-						if (internalComponent[prop][j].remove)
-							internalComponent[prop][j].remove();
-						else
-							this.component.removeChild(this.component.children[j]);
-					}
-
-					if (Array.isArray(binding.objectValue) || binding.objectValue instanceof ObservableArray) {
-						for (var i = 0; i < binding.objectValue.length; i++)
-							this.bindingObservableItem(binding.name, i, binding.objectValue[i], prop);
-					}
-					else {
-						this.bindingObservableItem(binding.name, 0, binding.objectValue, prop);
-					}
-				}
-			}
-			else if (typeof (binding.value) !== "undefined")
-				internalComponent[prop] = binding.value;
-		}
-	}
-
 	private bindingObservableItem(propName: string, index: number, item: any, bindName: string) {
 		if (!this.bindings[propName] || this._template == undefined)
 			return;
@@ -344,6 +294,48 @@ class ModelProperty<T> {
 		}
 	}
 
+	setComponentBinding(binding: BindableProperty): void {
+		binding.dirty = true;
+		var internalComponent = this.component;
+		var prop = this.getComponentBinding(binding.name);
+
+		if (prop != null && prop.indexOf('.') != -1) {
+			var internalProps = prop.split('.');
+			prop = internalProps[internalProps.length - 1];
+			internalProps = internalProps.slice(0, internalProps.length - 1);
+
+			internalProps.forEach((n) => {
+				if (!internalComponent[n])
+					internalComponent[n] = {};
+
+				internalComponent = internalComponent[n];
+			});
+		}
+
+		if (typeof (internalComponent[prop]) != undefined) {
+			if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
+				if (binding.dirty) {
+					for (var j = internalComponent[prop].length - 1; j > -1; j--) {
+						if (internalComponent[prop][j].remove)
+							internalComponent[prop][j].remove();
+						else
+							this.component.removeChild(this.component.children[j]);
+					}
+
+					if (Array.isArray(binding.objectValue) || binding.objectValue instanceof ObservableArray) {
+						for (var i = 0; i < binding.objectValue.length; i++)
+							this.bindingObservableItem(binding.name, i, binding.objectValue[i], prop);
+					}
+					else {
+						this.bindingObservableItem(binding.name, 0, binding.objectValue, prop);
+					}
+				}
+			}
+			else if (typeof (binding.value) !== "undefined")
+				internalComponent[prop] = binding.value;
+		}
+	}
+
 	static createAccesorProperty(propertyName: string, source: Object, property: BindableProperty): void {
 		if (source['mutated-accesors'] && source['mutated-accesors'].indexOf(propertyName) != -1)
 			return;
@@ -374,5 +366,15 @@ class ModelProperty<T> {
 			source['mutated-accesors'] = [];
 
 		source['mutated-accesors'].push(propertyName);
+	}
+
+	static syncComponentEvent(instance: ModelProperty<any>): void {
+		instance.dispatchEvents = [];
+		for (var compBind in instance.componentBindings) {
+			if (typeof (instance.component[compBind]) != undefined)
+				instance.pendingSync[compBind] = instance.component[compBind];
+		}
+
+		instance.syncDependencies(instance);
 	}
 }

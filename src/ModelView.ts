@@ -98,7 +98,7 @@ class ModelView<T> {
 
 
 	private createObservableObject(obj: any, parentName?: string): void {
-		if (typeof (obj) !== "object")
+		if (typeof (obj) !== "object" || obj["mutated-observation"])
 			return;
 
 		var parentPropName = "";
@@ -113,7 +113,8 @@ class ModelView<T> {
 
 		for (var objProp in oriProps) {
 			var propertyName = oriProps[objProp];
-			if (propertyName.indexOf('_') != 0 && typeof (obj[propertyName]) !== "function") {
+			if (propertyName.indexOf('_') != 0 && typeof (obj[propertyName]) !== "function"
+				&& propertyName !== "mutated-accesors" && propertyName.indexOf('$') != 0) {
 				var result: BindableProperty = this.bindings[propertyName];
 				if (typeof (result) === "undefined") {
 					result = new BindableProperty(propertyName,
