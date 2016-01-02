@@ -311,7 +311,8 @@ var ModelProperty = (function () {
     ModelProperty.syncComponentEvent = function (instance) {
         instance.dispatchEvents = [];
         for (var compBind in instance.componentBindings) {
-            if (typeof (instance.component[compBind]) != undefined)
+            if (typeof (instance.component[compBind]) != undefined
+                && instance.component[compBind].__proto__ !== HTMLCollection.prototype)
                 instance.pendingSync[compBind] = instance.component[compBind];
         }
         instance.syncDependencies(instance);
