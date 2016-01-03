@@ -13,7 +13,7 @@ var ModelProperty = (function () {
             if (this.component.dataset.hasOwnProperty(name) && name.indexOf("dt") == 0) {
                 if (name.length > 2) {
                     var bindName = name[2].toLowerCase() + name.slice(3);
-                    var bindValue = this.component.dataset[name];
+                    var bindValue = this.component.dataset[name].trim();
                     bindName = bindName.replace("html", "HTML");
                     if (bindValue.indexOf('#') === -1)
                         bindValue = bindValue.replace('.', '|');
@@ -105,15 +105,9 @@ var ModelProperty = (function () {
             });
             var config = { attributes: true, childList: false, characterData: true };
             observer.observe(this._component, config);
-            this._component.onchange = function () {
-                ModelProperty.syncComponentEvent(instance);
-            };
-            this._component.onkeydown = function () {
-                ModelProperty.syncComponentEvent(instance);
-            };
-            this._component.onkeyup = function () {
-                ModelProperty.syncComponentEvent(instance);
-            };
+            this._component.addEventListener("change", function () { ModelProperty.syncComponentEvent(instance); }, false);
+            this._component.addEventListener("keydown", function () { ModelProperty.syncComponentEvent(instance); }), false;
+            this._component.addEventListener("keyup", function () { ModelProperty.syncComponentEvent(instance); }, false);
         },
         enumerable: true,
         configurable: true
@@ -121,7 +115,7 @@ var ModelProperty = (function () {
     ModelProperty.prototype.listenChangeEvents = function (propName, bindProperty) {
         var _this = this;
         document.addEventListener(bindProperty.propertyChangeEvent, function (e) { return _this.onBindingChange(e); }, false);
-        if (this.bindings[propName].objectValue instanceof ObservableArray) {
+        if (this.bindings[propName].value instanceof ObservableArray) {
             document.addEventListener(propName + "elementAdded", function (e) {
                 if (e.detail instanceof ObservableItem) {
                     var prop = _this.getComponentBinding(e.detail.name);
@@ -269,12 +263,12 @@ var ModelProperty = (function () {
                         else
                             this.component.removeChild(this.component.children[j]);
                     }
-                    if (Array.isArray(binding.objectValue) || binding.objectValue instanceof ObservableArray) {
-                        for (var i = 0; i < binding.objectValue.length; i++)
-                            this.bindingObservableItem(binding.name, i, binding.objectValue[i], prop);
+                    if (Array.isArray(binding.value) || binding.value instanceof ObservableArray) {
+                        for (var i = 0; i < binding.value.length; i++)
+                            this.bindingObservableItem(binding.name, i, binding.value[i], prop);
                     }
                     else {
-                        this.bindingObservableItem(binding.name, 0, binding.objectValue, prop);
+                        this.bindingObservableItem(binding.name, 0, binding.value, prop);
                     }
                 }
             }
@@ -283,6 +277,8 @@ var ModelProperty = (function () {
         }
     };
     ModelProperty.createAccesorProperty = function (propertyName, source, property) {
+        if (Array.isArray(source) || source instanceof ObservableArray)
+            return;
         if (source['mutated-accesors'] && source['mutated-accesors'].indexOf(propertyName) != -1)
             return;
         var privateProp = "_" + propertyName;
@@ -297,13 +293,13 @@ var ModelProperty = (function () {
             enumerable: true,
             configurable: true
         });
-        /*Object.defineProperty(source, "$" + propertyName, {
-            get: function() {
-                return this[privateProp].objectValue;
+        Object.defineProperty(source, "$" + propertyName, {
+            get: function () {
+                return this[privateProp].stringValue;
             },
             enumerable: true,
             configurable: true
-        });*/
+        });
         if (!source['mutated-accesors'])
             source['mutated-accesors'] = [];
         source['mutated-accesors'].push(propertyName);

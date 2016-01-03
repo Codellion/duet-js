@@ -6,7 +6,7 @@
 <script src="../../build/duet.js"></script>
 </head>
 
-<body onload='window["testModel"] = new ModelView("testModel", { animal: { name: "Tom", ok:false }, zoo: [ {name: "ani_zoo1", id:1},{name: "ani_zoo2", id:2}  ], zoo2: [ {name: "ani_zoo3", id:3}, {name: "ani_zoo4", id:4}, {name: "ani_zoo5", id:5}, , {name: "ani_zoo6", id:6, animals:[{type:"leon"},{type:"pantera"}]}] });'>
+<body onload='window["testModel"] = new ModelView("testModel", { animal: { name: "Tom", ok:false }, zoo: [ {name: "ani_zoo1", id:1, extradata:"a"},{name: "ani_zoo2", id:2, extradata:"b"}  ], zoo2: [ {name: "ani_zoo3", id:3}, {name: "ani_zoo4", id:4}, {name: "ani_zoo5", id:5}, , {name: "ani_zoo6", id:6, animals:[{type:"leon"},{type:"pantera"}]}] });'>
 
 	¿Has escrito algo?:
 	<input type="text" id="txtTest" data-dt="testModel" data-dt-value="#this.animal.name.length > 0" data-dt-disabled="animal.ok" />
@@ -22,7 +22,7 @@
 	<br />
 	Select:
 	<select id="ddlTest" data-dt="testModel" data-dt-children="zoo" data-dt-value="selectedZoo">
-		<option data-dt="children" data-dt-text="name" data-dt-value="id"></option>
+		<option data-dt="children" data-dt-text="name" data-dt-dataset.item="extradata" data-dt-value="id"></option>
 	</select>
 	<br />
 	Select2:

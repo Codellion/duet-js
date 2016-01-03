@@ -52,17 +52,9 @@ class ModelProperty<T> {
 		var config = { attributes: true, childList: false, characterData: true };
 		observer.observe(this._component, config);
 	
-        this._component.onchange = () => {
-			ModelProperty.syncComponentEvent(instance);
-        };
-
-        this._component.onkeydown = () => {
-			ModelProperty.syncComponentEvent(instance);
-        };
-
-        this._component.onkeyup = () => {
-			ModelProperty.syncComponentEvent(instance);
-        };
+		this._component.addEventListener("change", () => { ModelProperty.syncComponentEvent(instance); }, false);
+		this._component.addEventListener("keydown", () => { ModelProperty.syncComponentEvent(instance); }), false;
+		this._component.addEventListener("keyup", () => { ModelProperty.syncComponentEvent(instance); }, false);
     }
 
 	constructor(modelView: ModelView<T>, component: HTMLElement) {		
@@ -78,7 +70,7 @@ class ModelProperty<T> {
 			if (this.component.dataset.hasOwnProperty(name) && (<string>name).indexOf("dt") == 0) {
 				if (name.length > 2) {
 					var bindName = name[2].toLowerCase() + name.slice(3);
-					var bindValue = this.component.dataset[name];
+					var bindValue = this.component.dataset[name].trim();
 
 					bindName = bindName.replace("html", "HTML");
 
@@ -149,7 +141,7 @@ class ModelProperty<T> {
 		document.addEventListener(bindProperty.propertyChangeEvent,
 			(e: CustomEvent) => this.onBindingChange(<CustomEvent>e), false);
 
-		if (this.bindings[propName].objectValue instanceof ObservableArray) {
+		if (this.bindings[propName].value instanceof ObservableArray) {
 			document.addEventListener(propName + "elementAdded", (e: CustomEvent) => {
 				if (e.detail instanceof ObservableItem) {
 					var prop = this.getComponentBinding(e.detail.name);
@@ -334,12 +326,12 @@ class ModelProperty<T> {
 							this.component.removeChild(this.component.children[j]);
 					}
 
-					if (Array.isArray(binding.objectValue) || binding.objectValue instanceof ObservableArray) {
-						for (var i = 0; i < binding.objectValue.length; i++)
-							this.bindingObservableItem(binding.name, i, binding.objectValue[i], prop);
+					if (Array.isArray(binding.value) || binding.value instanceof ObservableArray) {
+						for (var i = 0; i < binding.value.length; i++)
+							this.bindingObservableItem(binding.name, i, binding.value[i], prop);
 					}
 					else {
-						this.bindingObservableItem(binding.name, 0, binding.objectValue, prop);
+						this.bindingObservableItem(binding.name, 0, binding.value, prop);
 					}
 				}
 			}
@@ -349,9 +341,12 @@ class ModelProperty<T> {
 	}
 
 	static createAccesorProperty(propertyName: string, source: Object, property: BindableProperty): void {
-		if (source['mutated-accesors'] && source['mutated-accesors'].indexOf(propertyName) != -1)
+		if (Array.isArray(source) || source instanceof ObservableArray)
 			return;
 
+		if (source['mutated-accesors'] && source['mutated-accesors'].indexOf(propertyName) != -1)
+			return;
+		
 		var privateProp = "_" + propertyName;
 		source[privateProp] = property;
 
@@ -366,13 +361,13 @@ class ModelProperty<T> {
 			configurable: true
 		});
 
-		/*Object.defineProperty(source, "$" + propertyName, {
+		Object.defineProperty(source, "$" + propertyName, {
 			get: function() {
-				return this[privateProp].objectValue;
+				return this[privateProp].stringValue;
 			},
 			enumerable: true,
 			configurable: true
-		});*/
+		});
 
 		if (!source['mutated-accesors'])
 			source['mutated-accesors'] = [];

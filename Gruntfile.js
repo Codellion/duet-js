@@ -9,6 +9,7 @@ grunt.task.init = function() {};
 grunt.initConfig({
   concat: {
     dist: {
+      
       src : ['src/BindableProperty.js', 'src/DynamicCode.js', 'src/IDictionary.js', 'src/ModelProperty.js', 'src/ModelView.js', 'src/ObservableArray.js', 'src/ObservableItem.js'],
       dest : 'build/duet.js'
     },

@@ -7,6 +7,7 @@ class BindableProperty {
 	template: HTMLElement;
 	dirty: boolean = false;
 	isFunction: boolean;
+	references: Array<string>;
 
 	private _internalExpression: string;
 	private _tempValue: any;
@@ -37,9 +38,6 @@ class BindableProperty {
 	}
 
 	get value(): any {
-		if (this._parseInProgress)
-			return null;
-
 		var propName = this.name;
 
 		if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && this.dirty == true) {
@@ -75,44 +73,17 @@ class BindableProperty {
 				}
 
 				result = DynamicCode.evalInContext(func, this._parentValue);
-
-				/*if (typeof result == "object") {
-					this._parseInProgress = true;
-					var cache = [];
-					result = JSON.stringify(result, function(key, value) {
-						if (typeof value === 'object' && value !== null) {
-							if (cache.indexOf(value) !== -1) {
-								return;
-							}
-							cache.push(value);
-						}
-						return value;
-					});
-					cache = null;
-					this._parseInProgress = false;
-
-					result = "#JSON#" + result;
-				}*/
+				
 			}
 
 			this._value = result;
 			this.dirty = false;
 		}
 
-		if (!this._funcIsChecked && this._internalExpression.indexOf('#') == -1 
-			&& this._internalExpression.indexOf('@') == -1){
-				this.isFunction = typeof this._value === "function";
-
-				if (this.isFunction)
-					this._funcDefinition = this._value;
-
-				this._funcIsChecked = true;
-		}
-
 		return this._value;
     }
 
-    get objectValue(): any {
+    /*get objectValue(): any {
 		if (this.value && typeof (this.value) == "string" && this.value.indexOf("#JSON#") == 0){
 			var obj = JSON.parse(this.value.slice(6));
 
@@ -131,7 +102,18 @@ class BindableProperty {
 		}
 		else
 			return this.value;
-    }
+    }*/
+
+    get stringValue(): string {
+		var result: string = "";
+
+		if (typeof this.value == "object")
+			result = JSON.stringify(this.originalObject(this.value));
+		else
+			result = this.value.toString();
+
+		return result;
+	}
 
     set value(value: any) {
         this._value = value;
@@ -153,6 +135,7 @@ class BindableProperty {
 		this._parentValue = parentValue;
 		this._externalReference = null;
 		this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
+		this.references = new Array<string>();
 
 		if(Array.isArray(value) || value instanceof ObservableArray) {
 			if (Array.isArray(value)) {
@@ -184,5 +167,45 @@ class BindableProperty {
 		this.dirty = true;
 		var elIndex = this.dispatchEvents.push(this.propertyChangeEvent);
 		document.dispatchEvent(this.propertyChange);
+	}
+
+	private originalObject(value: any): any {
+		var ori: any = null;
+
+		if (Array.isArray(value) || value instanceof ObservableArray)
+			ori = [];
+		else
+			ori = {};
+
+		if (value.hasOwnProperty('mutated-accesors')) {
+			var auxAccesors = value['mutated-accesors'];
+			for (var i in auxAccesors) {
+				var mutatedProp = auxAccesors[i];
+				if (mutatedProp.indexOf('#') === -1 && mutatedProp.indexOf('@') === -1){
+					var internalVal = null;
+
+					if (value[mutatedProp] instanceof BindableProperty)
+						internalVal = value[mutatedProp].stringValue;
+					else if (typeof value[mutatedProp] === "object")
+						internalVal = this.originalObject(value[mutatedProp]);
+					else
+						internalVal = value[mutatedProp];	
+
+					if (Array.isArray(ori))
+						ori.push(internalVal);
+					else
+						ori[mutatedProp] = internalVal;
+				}				
+			}
+		}
+		else if (Array.isArray(value) || value instanceof ObservableArray) {
+			for (var j = 0; j < value.length; j++)
+				ori.push(this.originalObject(value[j]));
+
+		}
+		else
+			ori = value;
+
+		return ori;
 	}
 }
