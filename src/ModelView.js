@@ -136,8 +136,11 @@ var ModelView = (function () {
             return;
         for (var bindingName in this.bindings) {
             var binding = this.bindings[bindingName];
-            if (binding.internalExpression.indexOf('#') == 0 && binding.internalExpression !== name) {
-                if (this.containsBindReference(binding.internalExpression, name))
+            if ((binding.internalExpression.indexOf('#') == 0 || binding.isFunction) && binding.internalExpression !== name) {
+                var expr = binding.internalExpression;
+                if (binding.isFunction)
+                    expr = binding.funcDefinition.toString();
+                if (this.containsBindReference(expr, name))
                     binding.dispatchChangeEvent();
             }
         }

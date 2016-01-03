@@ -4,6 +4,8 @@
 var BindableProperty = (function () {
     function BindableProperty(propertyName, internalExpression, value, parentValue, isIndependent) {
         this.dirty = false;
+        this._funcExpresion = null;
+        this._funcIsChecked = false;
         this.name = propertyName;
         this._internalExpression = internalExpression;
         this._tempValue = null;
@@ -28,6 +30,13 @@ var BindableProperty = (function () {
             this.value = value;
         }
     }
+    Object.defineProperty(BindableProperty.prototype, "funcDefinition", {
+        get: function () {
+            return this._funcDefinition;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(BindableProperty.prototype, "internalExpression", {
         get: function () {
             return this._internalExpression;
@@ -50,10 +59,13 @@ var BindableProperty = (function () {
                 return null;
             var propName = this.name;
             if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && this.dirty == true) {
-                var func = this._internalExpression.slice(1);
                 var result = null;
-                if (func.indexOf("=>") != -1)
-                    func = DynamicCode.parseLambdaExpression(func);
+                var func = this._funcExpresion;
+                if (func == null) {
+                    func = this._internalExpression.slice(1);
+                    if (func.indexOf("=>") != -1)
+                        func = DynamicCode.parseLambdaExpression(func);
+                }
                 if (this._internalExpression.indexOf('@') == 0) {
                     this._eventExpresion = func;
                     var _this = this;
@@ -63,15 +75,28 @@ var BindableProperty = (function () {
                     });
                 }
                 else {
+                    this._funcExpresion = func;
+                    if (!this._funcIsChecked && func.indexOf('this.') == 0 && func.indexOf('(') != -1) {
+                        var funcAux = func.replace('this.', '');
+                        funcAux = funcAux.slice(0, funcAux.indexOf('('));
+                        this.isFunction = this._parentValue[funcAux] ? typeof this._parentValue[funcAux] === "function" : false;
+                        if (this.isFunction)
+                            this._funcDefinition = this._parentValue[funcAux];
+                        this._funcIsChecked = true;
+                    }
                     result = DynamicCode.evalInContext(func, this._parentValue);
                 }
                 this._value = result;
                 this.dirty = false;
-                return result;
             }
-            else {
-                return this._value;
+            if (!this._funcIsChecked && this._internalExpression.indexOf('#') == -1
+                && this._internalExpression.indexOf('@') == -1) {
+                this.isFunction = typeof this._value === "function";
+                if (this.isFunction)
+                    this._funcDefinition = this._value;
+                this._funcIsChecked = true;
             }
+            return this._value;
         },
         set: function (value) {
             this._value = value;

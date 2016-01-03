@@ -32,6 +32,17 @@
 					tdd.model.tasks.push({ done: false, description: tdd.model.task, selectTask: selTask });
 
 				tdd.model.cleanTask();
+			}),
+			countTasks: (function (isDone, checkArchive){
+				var force = false;
+
+				if(checkArchive)
+					force = this.showArchiveTasks;
+
+				if(force)
+					return this.tasks.filter(function(n){ return n.done === isDone || force}).length;
+				else
+					return this.tasks.filter(function(n){ return n.done === isDone}).length;
 			})
 		};
 
@@ -50,9 +61,9 @@
 		<input type="button" value="clean" data-dt="tdd" data-dt-onclick="cleanTask" />
 		<p>
 			<input id="chkArchive" type="checkbox" data-dt="tdd" data-dt-checked="showArchiveTasks" />
-			<label for="chkArchive">Show archived (<span data-dt="tdd" data-dt-innerHTML="#this.tasks.filter(n => n.done).length"></span>)</label>
+			<label for="chkArchive">Show archived (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(true, false)"></span>)</label>
 		</p>
-		<p>Tasks (<span data-dt="tdd" data-dt-innerHTML="#this.showArchiveTasks? this.tasks.length : this.tasks.filter(n => !n.done).length"></span>)</p>
+		<p>Tasks (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(false, true)"></span>)</p>
 		<ul data-dt="tdd" data-dt-children="#var force = this.showArchiveTasks; this.tasks.filter(n => !n.done || force)">
 			<il>
 				<input type="checkbox" data-dt="children" data-dt-checked="done" />				

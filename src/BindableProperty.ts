@@ -6,6 +6,7 @@ class BindableProperty {
 	name: string;
 	template: HTMLElement;
 	dirty: boolean = false;
+	isFunction: boolean;
 
 	private _internalExpression: string;
 	private _tempValue: any;
@@ -13,10 +14,16 @@ class BindableProperty {
 	private _parentValue: any;
 	private _parseInProgress: boolean;
 	private _eventExpresion: string;
+	private _funcExpresion: string = null;
 	private _externalReference: string;
-	private _functions: DOMStringMap;
+	private _funcIsChecked: boolean = false;
+	private _funcDefinition: any;
 
 	propertyChange: CustomEvent;
+
+	get funcDefinition(): any {
+		return this._funcDefinition;
+	}
 
 	get internalExpression(): string {
 		return this._internalExpression;
@@ -36,11 +43,14 @@ class BindableProperty {
 		var propName = this.name;
 
 		if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && this.dirty == true) {
-			var func = this._internalExpression.slice(1);
 			var result: any = null;
+			var func = this._funcExpresion;
+			if(func == null) {
+				func = this._internalExpression.slice(1);
 
-			if (func.indexOf("=>") != -1)
-				func = DynamicCode.parseLambdaExpression(func);
+				if (func.indexOf("=>") != -1)
+					func = DynamicCode.parseLambdaExpression(func);
+			}
 
 			if (this._internalExpression.indexOf('@') == 0) {
 				this._eventExpresion = func;		
@@ -51,6 +61,19 @@ class BindableProperty {
 				});				
 			}
 			else {
+				this._funcExpresion = func;
+
+				if(!this._funcIsChecked && func.indexOf('this.') == 0 && func.indexOf('(') != -1){
+					var funcAux = func.replace('this.', '');
+					funcAux = funcAux.slice(0, funcAux.indexOf('('));
+					this.isFunction = this._parentValue[funcAux] ? typeof this._parentValue[funcAux] === "function" : false;
+
+					if (this.isFunction)
+						this._funcDefinition = this._parentValue[funcAux];
+
+					this._funcIsChecked = true;
+				}
+
 				result = DynamicCode.evalInContext(func, this._parentValue);
 
 				/*if (typeof result == "object") {
@@ -74,12 +97,19 @@ class BindableProperty {
 
 			this._value = result;
 			this.dirty = false;
+		}
 
-			return result;
+		if (!this._funcIsChecked && this._internalExpression.indexOf('#') == -1 
+			&& this._internalExpression.indexOf('@') == -1){
+				this.isFunction = typeof this._value === "function";
+
+				if (this.isFunction)
+					this._funcDefinition = this._value;
+
+				this._funcIsChecked = true;
 		}
-		else {
-    		return this._value;
-		}
+
+		return this._value;
     }
 
     get objectValue(): any {
