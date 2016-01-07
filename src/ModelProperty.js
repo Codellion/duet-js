@@ -167,7 +167,7 @@ var ModelProperty = (function () {
         }
         var element = this._template.cloneNode(true);
         this.component.appendChild(element);
-        var newModel = new ModelView(newModelName, item, element, bindName);
+        var newModel = new ModelView(newModelName, item, element, bindName, this.modelView.originalModel);
         this.modelView.subModels.push(newModel);
     };
     ModelProperty.prototype.getComponentBinding = function (bindName) {
@@ -231,7 +231,7 @@ var ModelProperty = (function () {
                         source = source[n];
                     });
                 }
-                result = new BindableProperty(propertyName, propName, source[propName], source);
+                result = new BindableProperty(propertyName, propName, source[propName], source, this.modelView.originalModel.model, this.component);
                 ModelProperty.createAccesorProperty(propName, source, result);
                 if (!this.bindings)
                     this.bindings = {};

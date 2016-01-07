@@ -7,6 +7,8 @@ class BindableProperty {
 	template: HTMLElement;
 	dirty: boolean = false;
 	isFunction: boolean;
+	model: any;
+	htmlComponent: HTMLElement;
 	references: Array<string>;
 
 	private _internalExpression: string;
@@ -55,7 +57,17 @@ class BindableProperty {
 				var _this = this;
 				result = (function() { 
 					window["dt-dispatchEvents"] = [];
-					return DynamicCode.evalInContext(_this._eventExpresion, _this._parentValue); 
+
+					var scope = _this._parentValue;
+					scope.model = _this.model;
+					scope.view = _this.htmlComponent;
+
+					var evalFunction = DynamicCode.evalInContext(_this._eventExpresion, scope); 
+
+					scope.model = undefined;
+					scope.view = undefined;
+
+					return evalFunction;
 				});				
 			}
 			else {
@@ -72,12 +84,37 @@ class BindableProperty {
 					this._funcIsChecked = true;
 				}
 
-				result = DynamicCode.evalInContext(func, this._parentValue);
-				
+				var scope = this._parentValue;
+				scope.model = this.model;
+				scope.view = this.htmlComponent;
+
+				result = DynamicCode.evalInContext(func, scope);
+
+				scope.model = undefined;
+				scope.view = undefined;				
 			}
 
 			this._value = result;
 			this.dirty = false;
+		}
+		else {
+			if(typeof this._value === "function" && this._funcExpresion === null) {
+				var scope = this._parentValue;
+				var model = this.model;
+				var view = this.htmlComponent;
+				this._funcExpresion = this._value.toString();
+				scope['_bind_' + this._internalExpression] = this._value;
+
+				var funcExpress = "_bind_" + this._internalExpression;
+
+				this._value = (function() {
+					scope.model = model;
+					scope.view = view;
+					scope[funcExpress]();
+					scope.model = undefined;
+					scope.view = undefined;	
+				 });
+			}
 		}
 
 		return this._value;
@@ -128,13 +165,15 @@ class BindableProperty {
 		return "propertyChange" + this.name;
 	}
 	
-	constructor(propertyName: string, internalExpression: string, value: any, parentValue: any, isIndependent?: boolean) {
+	constructor(propertyName: string, internalExpression: string, value: any, parentValue: any, model: any, element: HTMLElement, isIndependent?: boolean) {
 		this.name = propertyName;
 		this._internalExpression = internalExpression;
 		this._tempValue = null;
 		this._parentValue = parentValue;
 		this._externalReference = null;
 		this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
+		this.model = model;
+		this.htmlComponent = element;
 		this.references = new Array<string>();
 
 		if(Array.isArray(value) || value instanceof ObservableArray) {

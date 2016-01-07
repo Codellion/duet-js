@@ -25,7 +25,7 @@
 				tdd.model.selectedTask = null;
 				tdd.model.isSelectTask = false;
 			}),
-			updateTasks: (function () {
+			updateTasks: (function (arg1, arg2) {
 				if(tdd.model.isSelectTask)
 					tdd.model.selectedTask.description = tdd.model.task;
 				else
@@ -60,7 +60,7 @@
 			data-dt-disabled="#!this.task || this.task.length == 0" data-dt-onclick="updateTasks" />
 		<input type="button" value="clean" data-dt="tdd" data-dt-onclick="cleanTask" />
 		<p>
-			<input id="chkArchive" type="checkbox" data-dt="tdd" data-dt-checked="showArchiveTasks" data-dt-onchange="cleanTask" />
+			<input id="chkArchive" type="checkbox" data-dt="tdd" data-dt-checked="showArchiveTasks" data-dt-onchange="@this.cleanTask()" />
 			<label for="chkArchive">Show archived (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(true, false)"></span>)</label>
 		</p>
 		<p>Tasks (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(false, true)"></span>)</p>

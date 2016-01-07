@@ -13,7 +13,7 @@
     window["CustomEvent"] = CustomEvent;
 })();
 var ModelView = (function () {
-    function ModelView(modelName, model, elementContainer, elementModel) {
+    function ModelView(modelName, model, elementContainer, elementModel, oriModel) {
         var _this = this;
         this.modelName = modelName;
         this.properties = new Array();
@@ -21,6 +21,10 @@ var ModelView = (function () {
             this.bindings = {};
         this.subModels = new Array();
         this.isInitialization = true;
+        if (oriModel)
+            this.originalModel = oriModel;
+        else
+            this.originalModel = this;
         if (model) {
             this.model = model;
             if (!model["mutated-observation"])
@@ -106,7 +110,7 @@ var ModelView = (function () {
                 var propertyBindName = parentPropName + "|" + propertyName;
                 var result = this.bindings[propertyBindName];
                 if (typeof (result) === "undefined") {
-                    result = new BindableProperty(propertyBindName, propertyName, obj[propertyName], obj, true);
+                    result = new BindableProperty(propertyBindName, propertyName, obj[propertyName], obj, this.originalModel.model, null, true);
                 }
                 ModelProperty.createAccesorProperty(propertyName, obj, result);
                 this.createObservableObject(obj[propertyName], propertyBindName);

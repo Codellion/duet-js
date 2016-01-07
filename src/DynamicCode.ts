@@ -1,7 +1,7 @@
 
 class DynamicCode {
 	
-	static evalInContext(js: string, context: any): any {
+	static evalInContext(js: any, context: any): any {
 		return function() { return eval(js); }.call(context);
 	}
 

@@ -2,7 +2,7 @@
 /// <reference path="ModelProperty.ts" />
 /// <reference path="DynamicCode.ts" />
 var BindableProperty = (function () {
-    function BindableProperty(propertyName, internalExpression, value, parentValue, isIndependent) {
+    function BindableProperty(propertyName, internalExpression, value, parentValue, model, element, isIndependent) {
         this.dirty = false;
         this._funcExpresion = null;
         this._funcIsChecked = false;
@@ -12,6 +12,8 @@ var BindableProperty = (function () {
         this._parentValue = parentValue;
         this._externalReference = null;
         this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
+        this.model = model;
+        this.htmlComponent = element;
         this.references = new Array();
         if (Array.isArray(value) || value instanceof ObservableArray) {
             if (Array.isArray(value)) {
@@ -70,7 +72,13 @@ var BindableProperty = (function () {
                     var _this = this;
                     result = (function () {
                         window["dt-dispatchEvents"] = [];
-                        return DynamicCode.evalInContext(_this._eventExpresion, _this._parentValue);
+                        var scope = _this._parentValue;
+                        scope.model = _this.model;
+                        scope.view = _this.htmlComponent;
+                        var evalFunction = DynamicCode.evalInContext(_this._eventExpresion, scope);
+                        scope.model = undefined;
+                        scope.view = undefined;
+                        return evalFunction;
                     });
                 }
                 else {
@@ -83,10 +91,32 @@ var BindableProperty = (function () {
                             this._funcDefinition = this._parentValue[funcAux];
                         this._funcIsChecked = true;
                     }
-                    result = DynamicCode.evalInContext(func, this._parentValue);
+                    var scope = this._parentValue;
+                    scope.model = this.model;
+                    scope.view = this.htmlComponent;
+                    result = DynamicCode.evalInContext(func, scope);
+                    scope.model = undefined;
+                    scope.view = undefined;
                 }
                 this._value = result;
                 this.dirty = false;
+            }
+            else {
+                if (typeof this._value === "function" && this._funcExpresion === null) {
+                    var scope = this._parentValue;
+                    var model = this.model;
+                    var view = this.htmlComponent;
+                    this._funcExpresion = this._value.toString();
+                    scope['_bind_' + this._internalExpression] = this._value;
+                    var funcExpress = "_bind_" + this._internalExpression;
+                    this._value = (function () {
+                        scope.model = model;
+                        scope.view = view;
+                        scope[funcExpress]();
+                        scope.model = undefined;
+                        scope.view = undefined;
+                    });
+                }
             }
             return this._value;
         },
@@ -417,7 +447,7 @@ var ModelProperty = (function () {
         }
         var element = this._template.cloneNode(true);
         this.component.appendChild(element);
-        var newModel = new ModelView(newModelName, item, element, bindName);
+        var newModel = new ModelView(newModelName, item, element, bindName, this.modelView.originalModel);
         this.modelView.subModels.push(newModel);
     };
     ModelProperty.prototype.getComponentBinding = function (bindName) {
@@ -481,7 +511,7 @@ var ModelProperty = (function () {
                         source = source[n];
                     });
                 }
-                result = new BindableProperty(propertyName, propName, source[propName], source);
+                result = new BindableProperty(propertyName, propName, source[propName], source, this.modelView.originalModel.model, this.component);
                 ModelProperty.createAccesorProperty(propName, source, result);
                 if (!this.bindings)
                     this.bindings = {};
@@ -581,7 +611,7 @@ var ModelProperty = (function () {
     window["CustomEvent"] = CustomEvent;
 })();
 var ModelView = (function () {
-    function ModelView(modelName, model, elementContainer, elementModel) {
+    function ModelView(modelName, model, elementContainer, elementModel, oriModel) {
         var _this = this;
         this.modelName = modelName;
         this.properties = new Array();
@@ -589,6 +619,10 @@ var ModelView = (function () {
             this.bindings = {};
         this.subModels = new Array();
         this.isInitialization = true;
+        if (oriModel)
+            this.originalModel = oriModel;
+        else
+            this.originalModel = this;
         if (model) {
             this.model = model;
             if (!model["mutated-observation"])
@@ -674,7 +708,7 @@ var ModelView = (function () {
                 var propertyBindName = parentPropName + "|" + propertyName;
                 var result = this.bindings[propertyBindName];
                 if (typeof (result) === "undefined") {
-                    result = new BindableProperty(propertyBindName, propertyName, obj[propertyName], obj, true);
+                    result = new BindableProperty(propertyBindName, propertyName, obj[propertyName], obj, this.originalModel.model, null, true);
                 }
                 ModelProperty.createAccesorProperty(propertyName, obj, result);
                 this.createObservableObject(obj[propertyName], propertyBindName);

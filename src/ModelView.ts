@@ -16,6 +16,7 @@
 })();
 
 class ModelView<T> {
+	originalModel: any;
 	properties: Array<ModelProperty<T>>;
 	model: any;
 	subModels: Array<ModelView<any>>;
@@ -46,13 +47,18 @@ class ModelView<T> {
         this._modelName = value;
     }
 
-	constructor(modelName: string, model: { new (): T; }, elementContainer?: Element, elementModel?: string) {
+	constructor(modelName: string, model: { new (): T; }, elementContainer?: Element, elementModel?: string, oriModel?: ModelView<any>) {
 		this.modelName = modelName;
 		this.properties = new Array<ModelProperty<T>>();
 		if(!this.bindings)
 			this.bindings = {};
 		this.subModels = new Array<ModelView<any>>();
 		this.isInitialization = true;
+
+		if (oriModel)
+			this.originalModel = oriModel;
+		else
+			this.originalModel = this;
 
 		if(model) {
 			this.model = model;
@@ -126,7 +132,7 @@ class ModelView<T> {
 
 				if (typeof (result) === "undefined") {
 					result = new BindableProperty(propertyBindName, propertyName,
-						obj[propertyName], obj, true);
+						obj[propertyName], obj, this.originalModel.model, null, true);
 				}
 
 				ModelProperty.createAccesorProperty(propertyName, obj, result);
