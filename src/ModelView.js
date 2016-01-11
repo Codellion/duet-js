@@ -40,17 +40,24 @@ var ModelView = (function () {
             }
         }
         if (modelName) {
-            var docElements = null;
+            var docElements = [];
             if (elementContainer) {
-                docElements = elementContainer.querySelectorAll("[data-dt='" + elementModel + "']");
+                var totalDocElements = Array.prototype.slice.call(elementContainer.querySelectorAll("[data-dt='" + elementModel + "']"));
+                var exclude = Array.prototype.slice.call(elementContainer.querySelectorAll('[data-dt=' + elementModel + '] [data-dt=' + elementModel + ']'));
+                if (totalDocElements.length !== exclude.length) {
+                    for (var k = 0; k < totalDocElements.length; k++)
+                        if (exclude.indexOf(totalDocElements[k]) === -1)
+                            docElements.push(totalDocElements[k]);
+                }
+                else
+                    docElements = totalDocElements;
                 var mdContainer = new ModelProperty(this, elementContainer);
                 this.properties.push(mdContainer);
             }
             else
-                docElements = document.querySelectorAll("[data-dt='" + modelName + "']");
+                docElements = Array.prototype.slice.call(document.querySelectorAll("[data-dt='" + modelName + "']"));
             if (docElements.length > 0) {
-                var docElementsArr = Array.prototype.slice.call(docElements, 0);
-                docElementsArr.forEach(function (element, index) {
+                docElements.forEach(function (element, index) {
                     if (element instanceof HTMLElement) {
                         var newProperty = new ModelProperty(_this, element);
                         _this.properties.push(newProperty);
@@ -130,14 +137,9 @@ var ModelView = (function () {
             obj["mutated-observation"] = true;
     };
     ModelView.prototype.checkBindDependencies = function (args) {
-        var name = args.detail.name;
+        var name = args.detail.internalExpression;
         if (args.detail["_externalReference"] && args.detail["_externalReference"] != null)
             name = args.detail["_externalReference"];
-        if (name.indexOf('|') !== -1) {
-            name = name.replace(this.modelName + '|', '').replace('|', '.');
-        }
-        if (name.indexOf('#') == 0)
-            return;
         for (var bindingName in this.bindings) {
             var binding = this.bindings[bindingName];
             if ((binding.internalExpression.indexOf('#') == 0 || binding.isFunction) && binding.internalExpression !== name) {

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Title of the document</title>
+<script src="../build/duet.js"></script>
+<script type="text/javascript">
+
+	function onDocLoad() {
+		var model = {
+			  stringValue: "Hello",
+			  passwordValue: "mypass",
+			  booleanValue: true,
+			  optionValues: [{name:"Alpha"}, {name:"Beta"}, {name:"Gamma"}],
+			  selectedOptionValue: "Gamma",
+			  multipleSelectedOptionValues: ["Alpha", "Gamma"],
+			  radioSelectedOptionValue: "Beta",
+			  isRadioSelect: (function(){
+			  	return this.radioSelectedOptionValue == this.view.value;
+			  }),
+			  changeRadioSelect: (function(){  	
+			  	this.model.radioSelectedOptionValue = this.view.value;
+			  })
+			};
+
+			view = new ModelView("controls", model);
+	}
+	
+</script>
+</head>
+
+<body onload="onDocLoad();">
+	<h3>What's in the model?</h3>
+	  <table>
+	    <tr>
+	      <td>Text value:</td>
+	      <td data-dt="controls" data-dt-innerHTML="stringValue"></td>
+	    </tr>
+	    <tr>
+	      <td>Password:</td>
+	      <td data-dt="controls" data-dt-innerHTML="passwordValue"></td>
+	    </tr>
+	    <tr>
+	      <td>Bool value:</td>
+	      <td data-dt="controls" data-dt-innerHTML='booleanValue'></td>
+	    </tr>
+	    <tr>
+	      <td>Selected option:</td>
+	      <td data-dt="controls" data-dt-innerHTML="selectedOptionValue"></td>
+	    </tr>
+	    <tr>
+	      <td>Multi-selected options:</td>
+	      <td data-dt="controls" data-dt-innerHTML="multipleSelectedOptionValues"></td>
+	    </tr>
+	    <tr>
+	      <td>Radio button selection:</td>
+	      <td data-dt="controls" data-dt-innerHTML="radioSelectedOptionValue"></td>
+	    </tr>
+	  </table>
+	</div>
+
+	<h3>HTML controls</h3>
+	<table>
+	  <tr>
+	    <td>Text value (updates on change):</td>
+	    <td>
+	      <input data-dt="controls" data-dt-value="stringValue" />
+	    </td>
+	  </tr>
+	  <tr>
+	    <td class="label">Text value (updates on keystroke):</td>
+	    <td>
+	      <input data-dt="controls" data-dt-value='stringValue' />
+	    </td>
+	  </tr>
+	  <tr>
+	    <td class="label">Text value (multi-line):</td>
+	    <td>
+	      <textarea data-dt="controls" data-dt-value="stringValue"> </textarea>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td class="label">Password:</td>
+	    <td>
+	      <input type="password" data-dt="controls" data-dt-value="passwordValue" />
+	    </td>
+	  </tr>
+	  <tr>
+	    <td class="label">Checkbox:</td>
+	    <td>
+	      <input type="checkbox" data-dt="controls" data-dt-checked="booleanValue" />
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>Drop-down list:</td>
+	    <td>
+	       <select data-dt="controls" data-dt-children="optionValues" data-dt-value="selectedOptionValue">
+	         <option data-dt="children" data-dt-text="name"></option>
+	       </select>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>Multi-select drop-down list:</td>
+	    <td>
+	      <select multiple="multiple" data-dt="controls" data-dt-children="optionValues" data-dt-value="multipleSelectedOptionValues">
+	        <option data-dt="children" data-dt-text="name"></option>
+	      </select>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>Radio buttons:</td>
+	    <td>
+	      <label>
+	        <input type="radio" value="Alpha" data-dt="controls" data-dt-checked="#this.isRadioSelect()" data-dt-onclick="changeRadioSelect" />Alpha</label>
+	      <label>
+	        <input type="radio" value="Beta" data-dt="controls" data-dt-checked="#this.isRadioSelect()" data-dt-onclick="changeRadioSelect" />Beta</label>
+	      <label>
+	        <input type="radio" value="Gamma" data-dt="controls" data-dt-checked="#this.isRadioSelect()" data-dt-onclick="changeRadioSelect" />Gamma</label>
+	    </td>
+	  </tr>
+	</table>
+</body>
+
+</html>

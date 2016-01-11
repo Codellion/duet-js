@@ -77,19 +77,29 @@ class ModelView<T> {
 		}
 
 		if(modelName) {
-			var docElements: NodeListOf<Element> = null;
+			var docElements: Array<Element> = [];
 
 			if (elementContainer) {
-				docElements = elementContainer.querySelectorAll("[data-dt='" + elementModel + "']");
+				var totalDocElements = Array.prototype.slice.call(elementContainer.querySelectorAll("[data-dt='" + elementModel + "']"));
+				var exclude = Array.prototype.slice.call(elementContainer.querySelectorAll('[data-dt=' + elementModel + '] [data-dt=' + elementModel + ']'));
+
+				if (totalDocElements.length !== exclude.length) {
+					for (var k = 0; k < totalDocElements.length; k++)
+						if (exclude.indexOf(totalDocElements[k]) === -1)
+							docElements.push(totalDocElements[k]);
+
+				}
+				else
+					docElements = totalDocElements;
+
 				var mdContainer = new ModelProperty(this, <HTMLElement>elementContainer);
 				this.properties.push(mdContainer);
 			}
 			else
-				docElements = document.querySelectorAll("[data-dt='" + modelName + "']");
+				docElements = Array.prototype.slice.call(document.querySelectorAll("[data-dt='" + modelName + "']"));
 
 			if (docElements.length > 0) {
-				var docElementsArr: Array<Element> = Array.prototype.slice.call(docElements, 0);
-				docElementsArr.forEach((element, index) => {
+				docElements.forEach((element, index) => {
 					if (element instanceof HTMLElement){
 						var newProperty = new ModelProperty(this, <HTMLElement>element);
 						this.properties.push(newProperty);
@@ -160,17 +170,10 @@ class ModelView<T> {
 	}
 
 	checkBindDependencies(args: CustomEvent): void {
-		var name = args.detail.name;
+		var name = args.detail.internalExpression;
 
 		if (args.detail["_externalReference"] && args.detail["_externalReference"] != null)
 			name = args.detail["_externalReference"];
-
-		if(name.indexOf('|') !== -1){
-			name = name.replace(this.modelName + '|', '').replace('|', '.');
-		}
-
-		if (name.indexOf('#') == 0)
-			return;
 
 		for(var bindingName in this.bindings) {
 			var binding = this.bindings[bindingName];

@@ -15,6 +15,7 @@ var BindableProperty = (function () {
         this.model = model;
         this.htmlComponent = element;
         this.references = new Array();
+        this.ignore = false;
         if (Array.isArray(value) || value instanceof ObservableArray) {
             if (Array.isArray(value)) {
                 var obsArr = null;
@@ -74,7 +75,7 @@ var BindableProperty = (function () {
                         window["dt-dispatchEvents"] = [];
                         var scope = _this._parentValue;
                         scope.model = _this.model;
-                        scope.view = _this.htmlComponent;
+                        scope.view = this;
                         var evalFunction = DynamicCode.evalInContext(_this._eventExpresion, scope);
                         scope.model = undefined;
                         scope.view = undefined;
@@ -111,7 +112,8 @@ var BindableProperty = (function () {
                     var funcExpress = "_bind_" + this._internalExpression;
                     this._value = (function () {
                         scope.model = model;
-                        scope.view = view;
+                        scope.view = this;
+                        window["dt-dispatchEvents"] = [];
                         scope[funcExpress]();
                         scope.model = undefined;
                         scope.view = undefined;
@@ -122,7 +124,10 @@ var BindableProperty = (function () {
         },
         set: function (value) {
             this._value = value;
-            document.dispatchEvent(this.propertyChange);
+            if (!this.ignore) {
+                this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
+                document.dispatchEvent(this.propertyChange);
+            }
         },
         enumerable: true,
         configurable: true
@@ -174,12 +179,15 @@ var BindableProperty = (function () {
         configurable: true
     });
     BindableProperty.prototype.dispatchChangeEvent = function (argName) {
+        if (this.ignore)
+            return;
         if (this.dispatchEvents.indexOf(this.propertyChangeEvent) !== -1)
             return;
         if (argName)
             this._externalReference = argName;
         this.dirty = true;
-        var elIndex = this.dispatchEvents.push(this.propertyChangeEvent);
+        this.dispatchEvents.push(this.propertyChangeEvent);
+        this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
         document.dispatchEvent(this.propertyChange);
     };
     BindableProperty.prototype.originalObject = function (value) {

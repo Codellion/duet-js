@@ -8,7 +8,7 @@ class ModelProperty<T> {
 	
 	internalBindings: IDictionary<BindableProperty>;
 	componentBindings: DOMStringMap;
-	pendingSync: DOMStringMap;
+	pendingSync: {};
 
 	componentSync: CustomEvent;
 
@@ -107,14 +107,17 @@ class ModelProperty<T> {
 					var mdProp = <ModelProperty<T>>e.detail;
 					var comp = mdProp.component;
 
-					for (var pendChange in mdProp.pendingSync) {
+					var internalComponent = this.component;
+
+					
+
+					for (var pendChange in mdProp.pendingSync) {						
 						var binding = this.bindings[this.componentBindings[pendChange]];
+						var propName = pendChange;						
 
-						var internalComponent = this.component;
-
-						if (pendChange.indexOf('.') != -1) {
-							var internalProps = pendChange.split('.');
-							pendChange = internalProps[internalProps.length - 1];
+						if (propName.indexOf('.') != -1) {
+							var internalProps = propName.split('.');
+							propName = internalProps[internalProps.length - 1];
 							internalProps = internalProps.slice(0, internalProps.length - 1);
 
 							internalProps.forEach((n) => {
@@ -125,10 +128,22 @@ class ModelProperty<T> {
 							});
 						}
 
+						binding.htmlComponent = internalComponent;
+
+
+						if (binding != undefined && !binding.ignore
+						    && mdProp.pendingSync[pendChange] != undefined
+							&& binding.value != mdProp.pendingSync[pendChange]) {
+							binding.value = mdProp.pendingSync[pendChange];
+						}
+
+						/*
+						
+
 						if (binding != undefined && internalComponent[pendChange] != undefined
 						 && binding.value != internalComponent[pendChange]) {
 							binding.value = internalComponent[pendChange];
-						}
+						}*/
 					}
 				}
 			}, false);
@@ -140,6 +155,25 @@ class ModelProperty<T> {
 	private listenChangeEvents(propName: string, bindProperty: BindableProperty): void {
 		document.addEventListener(bindProperty.propertyChangeEvent,
 			(e: CustomEvent) => this.onBindingChange(<CustomEvent>e), false);
+
+
+		var internalComponent = this.component;
+		var propInternalName = propName;
+
+		if (propInternalName.indexOf('.') != -1) {
+			var internalProps = propInternalName.split('.');
+			propInternalName = internalProps[internalProps.length - 1];
+			internalProps = internalProps.slice(0, internalProps.length - 1);
+
+			internalProps.forEach((n) => {
+				if (!internalComponent[n])
+					internalComponent[n] = {};
+
+				internalComponent = internalComponent[n];
+			});
+		}
+
+		this.bindings[propName].htmlComponent = internalComponent;
 
 		if (this.bindings[propName].value instanceof ObservableArray) {
 			document.addEventListener(propName + "elementAdded", (e: CustomEvent) => {
@@ -316,6 +350,8 @@ class ModelProperty<T> {
 			});
 		}
 
+		binding.htmlComponent = internalComponent;
+
 		if (typeof (internalComponent[prop]) != undefined) {
 			if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
 				if (binding.dirty) {
@@ -335,8 +371,20 @@ class ModelProperty<T> {
 					}
 				}
 			}
-			else if (typeof (binding.value) !== "undefined")
-				internalComponent[prop] = binding.value;
+			else if (typeof (binding.value) !== "undefined"){
+				if(internalComponent['multiple']) {
+					var lenght = internalComponent.children.length;
+
+					for (var i = 0; i < lenght; i++) {
+						if (binding.value.indexOf(internalComponent.children[i]['value']) !== -1) {
+							internalComponent.children[i]['selected'] = true;
+						}
+					}
+				}
+				else {
+					internalComponent[prop] = binding.value;
+				}
+			}
 		}
 	}
 
@@ -379,8 +427,22 @@ class ModelProperty<T> {
 		instance.dispatchEvents = [];
 		for (var compBind in instance.componentBindings) {
 			if (typeof (instance.component[compBind]) != undefined
-			 && instance.component[compBind].__proto__ !== HTMLCollection.prototype)
-				instance.pendingSync[compBind] = instance.component[compBind];
+			 && instance.component[compBind].__proto__ !== HTMLCollection.prototype){
+				if (instance.component['multiple']) {
+					var lenght = instance.component.children.length;
+					var arrValue = [];
+
+					for (var i = 0; i < lenght; i++) {
+						if (instance.component.children[i]['selected']) {
+							arrValue.push(instance.component.children[i]['value']);
+						}
+					}
+
+					instance.pendingSync[compBind] = arrValue;
+				}
+				else
+					instance.pendingSync[compBind] = instance.component[compBind];
+			}
 		}
 
 		instance.syncDependencies(instance);

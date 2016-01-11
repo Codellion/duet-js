@@ -10,6 +10,7 @@ class BindableProperty {
 	model: any;
 	htmlComponent: HTMLElement;
 	references: Array<string>;
+	ignore: boolean;
 
 	private _internalExpression: string;
 	private _tempValue: any;
@@ -60,7 +61,7 @@ class BindableProperty {
 
 					var scope = _this._parentValue;
 					scope.model = _this.model;
-					scope.view = _this.htmlComponent;
+					scope.view = this;
 
 					var evalFunction = DynamicCode.evalInContext(_this._eventExpresion, scope); 
 
@@ -109,7 +110,8 @@ class BindableProperty {
 
 				this._value = (function() {
 					scope.model = model;
-					scope.view = view;
+					scope.view = this;
+					window["dt-dispatchEvents"] = [];
 					scope[funcExpress]();
 					scope.model = undefined;
 					scope.view = undefined;	
@@ -154,7 +156,10 @@ class BindableProperty {
 
     set value(value: any) {
         this._value = value;
-		document.dispatchEvent(this.propertyChange);
+        if(!this.ignore){
+			this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
+			document.dispatchEvent(this.propertyChange);
+        }
     }
 
     set internalValue(value: any) {
@@ -175,6 +180,7 @@ class BindableProperty {
 		this.model = model;
 		this.htmlComponent = element;
 		this.references = new Array<string>();
+		this.ignore = false;
 
 		if(Array.isArray(value) || value instanceof ObservableArray) {
 			if (Array.isArray(value)) {
@@ -197,6 +203,9 @@ class BindableProperty {
 	}
 
 	dispatchChangeEvent(argName?: string) {
+		if (this.ignore)
+			return;
+
 		if (this.dispatchEvents.indexOf(this.propertyChangeEvent) !== -1)
 			return;
 
@@ -204,7 +213,8 @@ class BindableProperty {
 			this._externalReference = argName;
 
 		this.dirty = true;
-		var elIndex = this.dispatchEvents.push(this.propertyChangeEvent);
+		this.dispatchEvents.push(this.propertyChangeEvent);
+		this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
 		document.dispatchEvent(this.propertyChange);
 	}
 
