@@ -59,7 +59,6 @@ var BindableProperty = (function () {
     });
     Object.defineProperty(BindableProperty.prototype, "value", {
         get: function () {
-            var _this = this;
             var propName = this.name;
             if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && this.dirty == true) {
                 var result = null;
@@ -128,7 +127,19 @@ var BindableProperty = (function () {
                     var childProp = this.htmlComponent.dataset['dtChildren'];
                     var filterProp = this._parentValue["_" + childProp].selectValueProp;
                     if (typeof filterProp !== "undefined") {
-                        this._objectValue = this._parentValue[childProp].find(function (n) { return n[filterProp] === _this.htmlComponent.value; });
+                        var selectComp = this.htmlComponent;
+                        if (!selectComp.multiple)
+                            this._objectValue = this._parentValue[childProp].find(function (n) { return n[filterProp] === selectComp.value; });
+                        else {
+                            var lenght = selectComp.children.length;
+                            var arrValue = [];
+                            for (var i = 0; i < lenght; i++) {
+                                if (selectComp.children[i]['selected']) {
+                                    arrValue.push(this._parentValue[childProp].find(function (n) { return n[filterProp] === selectComp.children[i]['value']; }));
+                                }
+                            }
+                            this._objectValue = arrValue;
+                        }
                     }
                     this.dirty = false;
                 }
@@ -608,7 +619,7 @@ var ModelProperty = (function () {
                 if (internalComponent['multiple']) {
                     var lenght = internalComponent.children.length;
                     for (var i = 0; i < lenght; i++) {
-                        if (binding.value.indexOf(internalComponent.children[i]['value']) !== -1) {
+                        if (binding.value != null && binding.value.indexOf(internalComponent.children[i]['value']) !== -1) {
                             internalComponent.children[i]['selected'] = true;
                         }
                     }

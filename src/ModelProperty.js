@@ -300,7 +300,7 @@ var ModelProperty = (function () {
                 if (internalComponent['multiple']) {
                     var lenght = internalComponent.children.length;
                     for (var i = 0; i < lenght; i++) {
-                        if (binding.value.indexOf(internalComponent.children[i]['value']) !== -1) {
+                        if (binding.value != null && binding.value.indexOf(internalComponent.children[i]['value']) !== -1) {
                             internalComponent.children[i]['selected'] = true;
                         }
                     }

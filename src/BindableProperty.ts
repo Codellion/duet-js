@@ -127,7 +127,23 @@ class BindableProperty {
 				var childProp = this.htmlComponent.dataset['dtChildren'];
 				var filterProp = this._parentValue["_" + childProp].selectValueProp;
 				if(typeof filterProp !== "undefined"){
-					this._objectValue = this._parentValue[childProp].find(n => n[filterProp] === (<HTMLSelectElement>this.htmlComponent).value);
+					var selectComp = <HTMLSelectElement>this.htmlComponent;
+
+					if(!selectComp.multiple)
+						this._objectValue = this._parentValue[childProp].find(n => n[filterProp] === selectComp.value);
+					else
+					{
+						var lenght = selectComp.children.length;
+						var arrValue = [];
+
+						for (var i = 0; i < lenght; i++) {
+							if (selectComp.children[i]['selected']) {
+								arrValue.push(this._parentValue[childProp].find(n => n[filterProp] === selectComp.children[i]['value']));
+							}
+						}
+
+						this._objectValue = arrValue;
+					}
 				}
 
 				this.dirty = false;
