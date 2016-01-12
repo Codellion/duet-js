@@ -11,6 +11,7 @@ class BindableProperty {
 	htmlComponent: HTMLElement;
 	references: Array<string>;
 	ignore: boolean;
+	selectValueProp: string;
 
 	private _internalExpression: string;
 	private _tempValue: any;
@@ -22,6 +23,7 @@ class BindableProperty {
 	private _externalReference: string;
 	private _funcIsChecked: boolean = false;
 	private _funcDefinition: any;
+	private _objectValue: any;
 
 	propertyChange: CustomEvent;
 
@@ -55,15 +57,15 @@ class BindableProperty {
 
 			if (this._internalExpression.indexOf('@') == 0) {
 				this._eventExpresion = func;		
-				var _this = this;
+				var self = this;
 				result = (function() { 
 					window["dt-dispatchEvents"] = [];
 
-					var scope = _this._parentValue;
-					scope.model = _this.model;
+					var scope = self._parentValue;
+					scope.model = self.model;
 					scope.view = this;
 
-					var evalFunction = DynamicCode.evalInContext(_this._eventExpresion, scope); 
+					var evalFunction = DynamicCode.evalInContext(self._eventExpresion, scope); 
 
 					scope.model = undefined;
 					scope.view = undefined;
@@ -117,10 +119,27 @@ class BindableProperty {
 					scope.view = undefined;	
 				 });
 			}
+			else if ((this.htmlComponent instanceof HTMLSelectElement) && this.htmlComponent.dataset
+			&& this.htmlComponent.dataset['dtValue']
+			&& this.htmlComponent.dataset['dtValue'] === this.internalExpression
+			&& this.htmlComponent.dataset['dtChildren']
+			&& this.dirty) {
+				var childProp = this.htmlComponent.dataset['dtChildren'];
+				var filterProp = this._parentValue["_" + childProp].selectValueProp;
+				if(typeof filterProp !== "undefined"){
+					this._objectValue = this._parentValue[childProp].find(n => n[filterProp] === (<HTMLSelectElement>this.htmlComponent).value);
+				}
+
+				this.dirty = false;
+			}
 		}
 
 		return this._value;
     }
+
+    get objectValue(): any {
+		return this._objectValue;
+	}
 
     /*get objectValue(): any {
 		if (this.value && typeof (this.value) == "string" && this.value.indexOf("#JSON#") == 0){

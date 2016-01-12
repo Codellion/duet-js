@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Title of the document</title>
+<script src="../build/duet.js"></script>
+<script type="text/javascript">
+
+	function onDocLoad() {
+				
+		var model = {
+		    tickets:[
+		      {name: 'Economy', price: 199.95},
+		      {name: 'Business', price: 449.22},
+		      {name: 'First Class', price: 1199.98}
+		    ],
+		    chosenTicket: null,
+		    resetTicket: (function(){
+		      this.chosenTicket = null;
+		    }),
+		    selectTicket: (function(){      
+		    	if(this.chosenTicket != null)
+		      		return this.$chosenTicket.price;
+		    }),
+		  };
+
+		ko = new ModelView("ko", model);
+	}
+	
+</script>
+</head>
+
+<body onload="onDocLoad();">
+	<div>
+	  <select data-dt="ko" data-dt-children="tickets" data-dt-value="chosenTicket">
+	    <option data-dt="children" data-dt-text="name" data-dt-value="name" />    
+	  </select>
+	  <button data-dt="ko" data-dt-disabled="#this.chosenTicket === null" data-dt-onclick="@this.resetTicket()">Clear</button>
+	  <p data-dt="ko" data-dt-style.display="#this.chosenTicket === null? 'none':''">
+	    You have chosen <b data-dt="ko" data-dt-innerHTML="chosenTicket"></b>
+	    ($<span data-dt="ko" data-dt-innerHTML="#this.selectTicket()"></span>)
+	  </p>
+	</div>
+</body>
+
+</html>

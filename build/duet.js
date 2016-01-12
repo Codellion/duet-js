@@ -59,6 +59,7 @@ var BindableProperty = (function () {
     });
     Object.defineProperty(BindableProperty.prototype, "value", {
         get: function () {
+            var _this = this;
             var propName = this.name;
             if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && this.dirty == true) {
                 var result = null;
@@ -70,13 +71,13 @@ var BindableProperty = (function () {
                 }
                 if (this._internalExpression.indexOf('@') == 0) {
                     this._eventExpresion = func;
-                    var _this = this;
+                    var self = this;
                     result = (function () {
                         window["dt-dispatchEvents"] = [];
-                        var scope = _this._parentValue;
-                        scope.model = _this.model;
+                        var scope = self._parentValue;
+                        scope.model = self.model;
                         scope.view = this;
-                        var evalFunction = DynamicCode.evalInContext(_this._eventExpresion, scope);
+                        var evalFunction = DynamicCode.evalInContext(self._eventExpresion, scope);
                         scope.model = undefined;
                         scope.view = undefined;
                         return evalFunction;
@@ -119,6 +120,18 @@ var BindableProperty = (function () {
                         scope.view = undefined;
                     });
                 }
+                else if ((this.htmlComponent instanceof HTMLSelectElement) && this.htmlComponent.dataset
+                    && this.htmlComponent.dataset['dtValue']
+                    && this.htmlComponent.dataset['dtValue'] === this.internalExpression
+                    && this.htmlComponent.dataset['dtChildren']
+                    && this.dirty) {
+                    var childProp = this.htmlComponent.dataset['dtChildren'];
+                    var filterProp = this._parentValue["_" + childProp].selectValueProp;
+                    if (typeof filterProp !== "undefined") {
+                        this._objectValue = this._parentValue[childProp].find(function (n) { return n[filterProp] === _this.htmlComponent.value; });
+                    }
+                    this.dirty = false;
+                }
             }
             return this._value;
         },
@@ -128,6 +141,13 @@ var BindableProperty = (function () {
                 this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
                 document.dispatchEvent(this.propertyChange);
             }
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(BindableProperty.prototype, "objectValue", {
+        get: function () {
+            return this._objectValue;
         },
         enumerable: true,
         configurable: true
@@ -469,6 +489,13 @@ var ModelProperty = (function () {
                 this.modelView.subModels.splice(subIndex, 1);
             }
         }
+        if (this._component instanceof HTMLSelectElement && this._template.dataset
+            && (this._template.dataset['dtValue'] || this._template.dataset['dtText'])) {
+            if (this._template.dataset['dtValue'])
+                this.bindings[propName].selectValueProp = this._template.dataset['dtValue'];
+            else
+                this.bindings[propName].selectValueProp = this._template.dataset['dtText'];
+        }
         var element = this._template.cloneNode(true);
         this.component.appendChild(element);
         var newModel = new ModelView(newModelName, item, element, bindName, this.modelView.originalModel);
@@ -609,9 +636,16 @@ var ModelProperty = (function () {
             enumerable: true,
             configurable: true
         });
+        /*Object.defineProperty(source, "$" + propertyName, {
+            get: function() {
+                return this[privateProp].stringValue;
+            },
+            enumerable: true,
+            configurable: true
+        });*/
         Object.defineProperty(source, "$" + propertyName, {
             get: function () {
-                return this[privateProp].stringValue;
+                return this[privateProp].objectValue;
             },
             enumerable: true,
             configurable: true

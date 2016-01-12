@@ -237,6 +237,15 @@ class ModelProperty<T> {
 			}
 		}
 
+		if(this._component instanceof HTMLSelectElement && this._template.dataset 
+			&& (this._template.dataset['dtValue'] || this._template.dataset['dtText'])){
+			if (this._template.dataset['dtValue'])
+				this.bindings[propName].selectValueProp = this._template.dataset['dtValue'];
+			else
+				this.bindings[propName].selectValueProp = this._template.dataset['dtText'];
+				
+		}
+
 		var element = this._template.cloneNode(true);
 		this.component.appendChild(element);
 
@@ -409,13 +418,22 @@ class ModelProperty<T> {
 			configurable: true
 		});
 
-		Object.defineProperty(source, "$" + propertyName, {
+		/*Object.defineProperty(source, "$" + propertyName, {
 			get: function() {
 				return this[privateProp].stringValue;
 			},
 			enumerable: true,
 			configurable: true
+		});*/
+
+		Object.defineProperty(source, "$" + propertyName, {
+			get: function() {
+				return this[privateProp].objectValue;
+			},
+			enumerable: true,
+			configurable: true
 		});
+
 
 		if (!source['mutated-accesors'])
 			source['mutated-accesors'] = [];

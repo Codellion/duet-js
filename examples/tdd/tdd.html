@@ -9,9 +9,9 @@
 
 	window.onload = (function(){
 		var selTask = function(){
-					tdd.model.task = this.description;
-					tdd.model.selectedTask = this;
-					tdd.model.isSelectTask = true;
+					this.model.task = this.description;
+					this.model.selectedTask = this;
+					this.model.isSelectTask = true;
 				};
 
 		var model = {
@@ -21,9 +21,9 @@
 			showArchiveTasks: true,
 			tasks: [],		
 			cleanTask: (function(){
-				tdd.model.task = "";
-				tdd.model.selectedTask = null;
-				tdd.model.isSelectTask = false;
+				this.model.task = "";
+				this.model.selectedTask = null;
+				this.model.isSelectTask = false;
 			}),
 			updateTasks: (function (arg1, arg2) {
 				if(tdd.model.isSelectTask)
@@ -60,7 +60,7 @@
 			data-dt-disabled="#!this.task || this.task.length == 0" data-dt-onclick="updateTasks" />
 		<input type="button" value="clean" data-dt="tdd" data-dt-onclick="cleanTask" />
 		<p>
-			<input id="chkArchive" type="checkbox" data-dt="tdd" data-dt-checked="showArchiveTasks" data-dt-onchange="@this.cleanTask()" />
+			<input id="chkArchive" type="checkbox" data-dt="tdd" data-dt-checked="showArchiveTasks" data-dt-onchange="cleanTask" />
 			<label for="chkArchive">Show archived (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(true, false)"></span>)</label>
 		</p>
 		<p>Tasks (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(false, true)"></span>)</p>
@@ -68,7 +68,7 @@
 			<il>
 				<input type="checkbox" data-dt="children" data-dt-checked="done" />				
 				<span data-dt="children" data-dt-innerHTML="description" data-dt-style.text-decoration="#this.done? 'line-through': ''"
-					 data-dt-onclick="@this.selectTask()"  onmouseover="" style="cursor: pointer;"></span>
+					 data-dt-onclick="selectTask"  onmouseover="" style="cursor: pointer;"></span>
 				<br />
 			</il>
 		</ul>
