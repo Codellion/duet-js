@@ -156,33 +156,12 @@ class BindableProperty {
     get objectValue(): any {
 		return this._objectValue;
 	}
-
-    /*get objectValue(): any {
-		if (this.value && typeof (this.value) == "string" && this.value.indexOf("#JSON#") == 0){
-			var obj = JSON.parse(this.value.slice(6));
-
-			if (obj.hasOwnProperty('mutated-accesors')) {
-				var auxAccesors = obj['mutated-accesors'];
-				obj['mutated-accesors'] = [];
-				for (var i in auxAccesors) {
-					var mutatedProp = auxAccesors[i];
-					var oldProp = obj['_' + mutatedProp];
-					ModelProperty.createAccesorProperty(mutatedProp, obj, 
-						new BindableProperty(mutatedProp, oldProp["_internalExpression"], oldProp["_value"], obj));
-				}
-			}
-
-			return obj;
-		}
-		else
-			return this.value;
-    }*/
-
+   
     get stringValue(): string {
 		var result: string = "";
 
-		if (typeof this.value == "object")
-			result = JSON.stringify(this.originalObject(this.value));
+		if (this.objectValue != null || typeof this.objectValue == "object")
+			result = JSON.stringify(this.originalObject(this.objectValue));
 		else
 			result = this.value.toString();
 

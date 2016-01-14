@@ -328,16 +328,16 @@ var ModelProperty = (function () {
             enumerable: true,
             configurable: true
         });
-        /*Object.defineProperty(source, "$" + propertyName, {
-            get: function() {
-                return this[privateProp].stringValue;
-            },
-            enumerable: true,
-            configurable: true
-        });*/
         Object.defineProperty(source, "$" + propertyName, {
             get: function () {
                 return this[privateProp].objectValue;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(source, propertyName + "_stringify", {
+            get: function () {
+                return this[privateProp].stringValue;
             },
             enumerable: true,
             configurable: true
