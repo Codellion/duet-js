@@ -23,12 +23,16 @@ class BindableProperty {
 	private _externalReference: string;
 	private _funcIsChecked: boolean = false;
 	private _funcDefinition: any;
+	private _funcDefinitionString: string;
 	private _objectValue: any;
 
 	propertyChange: CustomEvent;
 
-	get funcDefinition(): any {
-		return this._funcDefinition;
+	get funcDefinition(): string {
+		if (this._funcDefinitionString == null)
+			this._funcDefinitionString = this._funcDefinition.toString().replace(' ', '');
+
+		return this._funcDefinitionString;
 	}
 
 	get internalExpression(): string {
@@ -195,6 +199,7 @@ class BindableProperty {
 		this.htmlComponent = element;
 		this.references = new Array<string>();
 		this.ignore = false;
+		this._funcDefinitionString = null;
 
 		if(Array.isArray(value) || value instanceof ObservableArray) {
 			if (Array.isArray(value)) {

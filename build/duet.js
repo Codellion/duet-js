@@ -16,6 +16,7 @@ var BindableProperty = (function () {
         this.htmlComponent = element;
         this.references = new Array();
         this.ignore = false;
+        this._funcDefinitionString = null;
         if (Array.isArray(value) || value instanceof ObservableArray) {
             if (Array.isArray(value)) {
                 var obsArr = null;
@@ -36,7 +37,9 @@ var BindableProperty = (function () {
     }
     Object.defineProperty(BindableProperty.prototype, "funcDefinition", {
         get: function () {
-            return this._funcDefinition;
+            if (this._funcDefinitionString == null)
+                this._funcDefinitionString = this._funcDefinition.toString().replace(' ', '');
+            return this._funcDefinitionString;
         },
         enumerable: true,
         configurable: true
@@ -816,8 +819,12 @@ var ModelView = (function () {
             if ((binding.internalExpression.indexOf('#') == 0 || binding.isFunction) && binding.internalExpression !== name) {
                 var expr = binding.internalExpression;
                 if (binding.isFunction)
-                    expr = binding.funcDefinition.toString();
+                    expr = binding.funcDefinition;
                 if (this.containsBindReference(expr, name))
+                    binding.dispatchChangeEvent();
+                else if (this.containsBindReference(expr, '$' + name))
+                    binding.dispatchChangeEvent();
+                else if (this.containsBindReference(expr, name + '_stringify'))
                     binding.dispatchChangeEvent();
             }
         }

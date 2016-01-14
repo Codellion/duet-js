@@ -182,9 +182,13 @@ class ModelView<T> {
 				var expr = binding.internalExpression;
 
 				if (binding.isFunction)
-					expr = binding.funcDefinition.toString();
+					expr = binding.funcDefinition;
 
 				if (this.containsBindReference(expr, name))
+					binding.dispatchChangeEvent();
+				else if (this.containsBindReference(expr, '$' + name))
+					binding.dispatchChangeEvent();
+				else if (this.containsBindReference(expr, name + '_stringify'))
 					binding.dispatchChangeEvent();
 			}
 		}
