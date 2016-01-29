@@ -302,6 +302,7 @@ var DynamicCode = (function () {
 
 /// <reference path="ModelView.ts" />
 /// <reference path="BindableProperty.ts" />
+/// <reference path="IDictionary.ts" />
 var ModelProperty = (function () {
     function ModelProperty(modelView, component) {
         var _this = this;
@@ -856,13 +857,13 @@ var ModelView = (function () {
     return ModelView;
 })();
 
+/// <reference path="ObservableItem.ts" />
+/// <reference path="BindableProperty.ts" />
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-/// <reference path="ObservableItem.ts" />
-/// <reference path="BindableProperty.ts" />
 var ObservableArray = (function (_super) {
     __extends(ObservableArray, _super);
     function ObservableArray(name, binding) {
@@ -968,4 +969,14 @@ var ObservableItem = (function () {
         this.index = index;
     }
     return ObservableItem;
+})();
+
+/// <reference path="ModelView.ts" />
+var duet = (function () {
+    function duet() {
+    }
+    duet.bind = function (modelName, model) {
+        return new ModelView(modelName, model);
+    };
+    return duet;
 })();

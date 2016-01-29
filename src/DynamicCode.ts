@@ -1,6 +1,6 @@
 
 class DynamicCode {
-	
+
 	static evalInContext(js: any, context: any): any {
 		return function() { return eval(js); }.call(context);
 	}
@@ -9,14 +9,14 @@ class DynamicCode {
 		var result = js;
 		var index = js.indexOf("=>", index);
 
-		while(index != -1) {
+		while (index != -1) {
 			var startIndex = DynamicCode.getLamdbaStart(js, index);
 			var endCurrentSymbol = js.length - 1;
 			var openFuncs = 0;
 			var lamdbaFunc = "";
 
-			for (var i = index; i < js.length - 1; i++){
-				if (js[i] === ')'){  
+			for (var i = index; i < js.length - 1; i++) {
+				if (js[i] === ')') {
 					if (openFuncs == 0) {
 						endCurrentSymbol = i;
 						break;
@@ -29,7 +29,7 @@ class DynamicCode {
 					openFuncs++;
 			}
 
-			lamdbaFunc = DynamicCode.createLambdaFunction(js.slice(startIndex, endCurrentSymbol + 1)); 
+			lamdbaFunc = DynamicCode.createLambdaFunction(js.slice(startIndex, endCurrentSymbol + 1));
 			result = result.slice(0, startIndex + 1) + lamdbaFunc + result.slice(endCurrentSymbol);
 			index = result.indexOf("=>");
 		}
@@ -45,7 +45,7 @@ class DynamicCode {
 		var param = js.slice(startIndex + 1, symbolIndex);
 		var code = js.slice(symbolIndex + 2, endIndex);
 
-		if(code.indexOf("=>") != -1) {
+		if (code.indexOf("=>") != -1) {
 			code = DynamicCode.parseLambdaExpression(code);
 		}
 
@@ -55,7 +55,7 @@ class DynamicCode {
 		return result;
 	}
 
-	static getLamdbaStart(js:string, symbolIndex: number): number {
+	static getLamdbaStart(js: string, symbolIndex: number): number {
 		var startIndex = symbolIndex;
 
 		for (var i = symbolIndex; i > -1; i--) {
@@ -68,3 +68,4 @@ class DynamicCode {
 		return startIndex;
 	}
 }
+

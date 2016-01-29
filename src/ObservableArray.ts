@@ -1,5 +1,6 @@
 /// <reference path="ObservableItem.ts" />
 /// <reference path="BindableProperty.ts" />
+
 class ObservableArray<T> extends Array<T> {
 	private _name: string;
 	private _binding: BindableProperty;
@@ -16,7 +17,7 @@ class ObservableArray<T> extends Array<T> {
 	elementRemoved: CustomEvent;
 	propertyChange: CustomEvent;
 
-	constructor(name: string, binding?: BindableProperty){
+	constructor(name: string, binding?: BindableProperty) {
 		var _self = this;
 		super();
 		this._name = name;
@@ -45,10 +46,10 @@ class ObservableArray<T> extends Array<T> {
 		return res;
 	}
 
-	pop(): T{
+	pop(): T {
 		var index = this.length - 1;
 		var res = super.pop();
-		if(this._binding === null){
+		if (this._binding === null) {
 			this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, index) });
 			document.dispatchEvent(this.elementRemoved);
 		}
@@ -63,7 +64,7 @@ class ObservableArray<T> extends Array<T> {
 		items.forEach((n) => {
 			n["_parentReference"] = this;
 			res = super.unshift(n);
-			if(this._binding) {
+			if (this._binding) {
 				this.elementAdded = new CustomEvent(this.name + "elementAdded", { detail: new ObservableItem(this.name, n, res) });
 				document.dispatchEvent(this.elementAdded);
 			}
@@ -75,7 +76,7 @@ class ObservableArray<T> extends Array<T> {
 
 	shift(): T {
 		var res = super.shift();
-		if(this._binding === null) {
+		if (this._binding === null) {
 			this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, 0) });
 			document.dispatchEvent(this.elementRemoved);
 		}
@@ -88,7 +89,7 @@ class ObservableArray<T> extends Array<T> {
 	change(index: number, value: T): void {
 		var origin = this[index];
 
-		for(var prop in origin) {
+		for (var prop in origin) {
 			if (value[prop])
 				origin[prop] = value[prop];
 		}

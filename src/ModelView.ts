@@ -9,7 +9,7 @@
 		var evt = document.createEvent('CustomEvent');
 		evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
 		return evt;
-	   }
+	}
 
 	CustomEvent.prototype = Event.prototype;
 	window["CustomEvent"] = CustomEvent;
@@ -39,18 +39,18 @@ class ModelView<T> {
 		window[this.modelName + "_dt-bindings"] = value;
 	}
 
-    get modelName(): string {
-        return this._modelName;
-    }
+	get modelName(): string {
+		return this._modelName;
+	}
 
-    set modelName(value: string) {
-        this._modelName = value;
-    }
+	set modelName(value: string) {
+		this._modelName = value;
+	}
 
 	constructor(modelName: string, model: { new (): T; }, elementContainer?: Element, elementModel?: string, oriModel?: ModelView<any>) {
 		this.modelName = modelName;
 		this.properties = new Array<ModelProperty<T>>();
-		if(!this.bindings)
+		if (!this.bindings)
 			this.bindings = {};
 		this.subModels = new Array<ModelView<any>>();
 		this.isInitialization = true;
@@ -60,14 +60,14 @@ class ModelView<T> {
 		else
 			this.originalModel = this;
 
-		if(model) {
+		if (model) {
 			this.model = model;
 			if (!model["mutated-observation"])
 				this.createObservableObject(this.model, this.modelName);
 			else {
 				var auxAccesor = model["mutated-accesors"];
 
-				for (var i in auxAccesor){
+				for (var i in auxAccesor) {
 					var newBindName = this.modelName + '|' + auxAccesor[i];
 					var oldBind = model["_" + auxAccesor[i]];
 					oldBind.name = this.modelName + '|' + auxAccesor[i];
@@ -76,7 +76,7 @@ class ModelView<T> {
 			}
 		}
 
-		if(modelName) {
+		if (modelName) {
 			var docElements: Array<Element> = [];
 
 			if (elementContainer) {
@@ -100,7 +100,7 @@ class ModelView<T> {
 
 			if (docElements.length > 0) {
 				docElements.forEach((element, index) => {
-					if (element instanceof HTMLElement){
+					if (element instanceof HTMLElement) {
 						var newProperty = new ModelProperty(this, <HTMLElement>element);
 						this.properties.push(newProperty);
 					}
@@ -110,11 +110,11 @@ class ModelView<T> {
 			this.properties.forEach(n => {
 				for (var bindName in n.internalBindings)
 					n.setComponentBinding(n.bindings[bindName]);
-			});		
+			});
 		}
 
 		this.isInitialization = false;
-	}	
+	}
 
 
 	private createObservableObject(obj: any, parentName?: string): void {
@@ -134,7 +134,7 @@ class ModelView<T> {
 		for (var objProp in oriProps) {
 			var propertyName = oriProps[objProp];
 			if (propertyName.indexOf('_') != 0 && typeof (obj[propertyName]) !== "function"
-			&& propertyName !== "mutated-accesors" && propertyName.indexOf('$') != 0) {
+				&& propertyName !== "mutated-accesors" && propertyName.indexOf('$') != 0) {
 
 				var propertyBindName = parentPropName + "|" + propertyName;
 
@@ -152,7 +152,7 @@ class ModelView<T> {
 
 				document.addEventListener(result.propertyChangeEvent,
 					(args: CustomEvent) => {
-						if(!this.isInitialization) {
+						if (!this.isInitialization) {
 							this.checkBindDependencies(args);
 
 							if (obj["_parentReference"] && obj["_parentReference"]._binding) {
@@ -160,12 +160,12 @@ class ModelView<T> {
 								obj["_parentReference"]._binding.dispatchChangeEvent(args.detail.internalExpression);
 							}
 						}
-						
-					}, false);
-			}			
-		}	
 
-		if(obj != null)
+					}, false);
+			}
+		}
+
+		if (obj != null)
 			obj["mutated-observation"] = true;
 	}
 
@@ -175,9 +175,9 @@ class ModelView<T> {
 		if (args.detail["_externalReference"] && args.detail["_externalReference"] != null)
 			name = args.detail["_externalReference"];
 
-		for(var bindingName in this.bindings) {
+		for (var bindingName in this.bindings) {
 			var binding = this.bindings[bindingName];
-			
+
 			if ((binding.internalExpression.indexOf('#') == 0 || binding.isFunction) && binding.internalExpression !== name) {
 				var expr = binding.internalExpression;
 
@@ -209,7 +209,7 @@ class ModelView<T> {
 
 		var startIndex = bindingName.indexOf(reference);
 
-		while(startIndex != -1) {
+		while (startIndex != -1) {
 			if (bindingName[startIndex - 1] === '.' && bindingName.length >= startIndex + reference.length
 				&& !ModelView.isAlphanumeric(bindingName, startIndex + reference.length)) {
 				res = true;
@@ -218,7 +218,7 @@ class ModelView<T> {
 			else {
 				startIndex = bindingName.indexOf(reference, startIndex + 1);
 			}
-		}		
+		}
 
 		return res;
 	}

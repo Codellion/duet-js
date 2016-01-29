@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>TDD Example</title>
-<script src="../../build/duet.js"></script>
+<script src="../build/duet.js"></script>
 <script type="text/javascript">
 	var tdd = null;
 
@@ -21,17 +21,17 @@
 			showArchiveTasks: true,
 			tasks: [],		
 			cleanTask: (function(){
-				this.model.task = "";
-				this.model.selectedTask = null;
-				this.model.isSelectTask = false;
+				this.task = "";
+				this.selectedTask = null;
+				this.isSelectTask = false;
 			}),
-			updateTasks: (function (arg1, arg2) {
-				if(tdd.model.isSelectTask)
-					tdd.model.selectedTask.description = tdd.model.task;
+			updateTasks: (function () {
+				if(this.isSelectTask)
+					this.selectedTask.description = tdd.model.task;
 				else
-					tdd.model.tasks.push({ done: false, description: tdd.model.task, selectTask: selTask });
+					this.tasks.push({ done: false, description: tdd.model.task, selectTask: selTask });
 
-				tdd.model.cleanTask();
+				this.cleanTask();
 			}),
 			countTasks: (function (isDone, checkArchive){
 				var force = false;
@@ -46,7 +46,7 @@
 			})
 		};
 
-		tdd = new ModelView("tdd", model);
+		tdd = duet.bind("tdd", model);
 	});
 	
 </script>

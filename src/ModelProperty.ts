@@ -1,11 +1,12 @@
 /// <reference path="ModelView.ts" />
 /// <reference path="BindableProperty.ts" />
+/// <reference path="IDictionary.ts" />
 
 class ModelProperty<T> {
 	private _component: HTMLElement;
 	private _modelView: ModelView<T>;
 	private _template: HTMLElement;
-	
+
 	internalBindings: IDictionary<BindableProperty>;
 	componentBindings: DOMStringMap;
 	pendingSync: {};
@@ -28,21 +29,21 @@ class ModelProperty<T> {
 		return this._modelView.bindings;
 	}
 
-    get modelView(): ModelView<T> {
-        return this._modelView;
-    }
+	get modelView(): ModelView<T> {
+		return this._modelView;
+	}
 
-    set modelView(value: ModelView<T>) {
-        this._modelView = value;
-    }
+	set modelView(value: ModelView<T>) {
+		this._modelView = value;
+	}
 
-    get component(): HTMLElement {
-        return this._component;
-    }
+	get component(): HTMLElement {
+		return this._component;
+	}
 
-    set component(value: HTMLElement) {
+	set component(value: HTMLElement) {
 		var instance: ModelProperty<T> = this;
-        this._component = value;
+		this._component = value;
 
 		var observer = new MutationObserver((mutations) => {
 			mutations.forEach((mutation) => this.syncComponentChange(mutation.target, mutation.attributeName));
@@ -51,13 +52,13 @@ class ModelProperty<T> {
 
 		var config = { attributes: true, childList: false, characterData: true };
 		observer.observe(this._component, config);
-	
+
 		this._component.addEventListener("change", () => { ModelProperty.syncComponentEvent(instance); }, false);
 		this._component.addEventListener("keydown", () => { ModelProperty.syncComponentEvent(instance); }), false;
 		this._component.addEventListener("keyup", () => { ModelProperty.syncComponentEvent(instance); }, false);
-    }
+	}
 
-	constructor(modelView: ModelView<T>, component: HTMLElement) {		
+	constructor(modelView: ModelView<T>, component: HTMLElement) {
 		this.modelView = modelView;
 		this.component = component;
 		this.componentBindings = {};
@@ -88,8 +89,8 @@ class ModelProperty<T> {
 				this._template = <HTMLElement>node;
 				this.component.removeChild(node);
 			}
-		}	
-				
+		}
+
 
 		if (binding) {
 			this.createPropertyBinding();
@@ -109,11 +110,11 @@ class ModelProperty<T> {
 
 					var internalComponent = this.component;
 
-					
 
-					for (var pendChange in mdProp.pendingSync) {						
+
+					for (var pendChange in mdProp.pendingSync) {
 						var binding = this.bindings[this.componentBindings[pendChange]];
-						var propName = pendChange;						
+						var propName = pendChange;
 
 						if (propName.indexOf('.') != -1) {
 							var internalProps = propName.split('.');
@@ -132,18 +133,10 @@ class ModelProperty<T> {
 
 
 						if (binding != undefined && !binding.ignore
-						    && mdProp.pendingSync[pendChange] != undefined
+							&& mdProp.pendingSync[pendChange] != undefined
 							&& binding.value != mdProp.pendingSync[pendChange]) {
 							binding.value = mdProp.pendingSync[pendChange];
 						}
-
-						/*
-						
-
-						if (binding != undefined && internalComponent[pendChange] != undefined
-						 && binding.value != internalComponent[pendChange]) {
-							binding.value = internalComponent[pendChange];
-						}*/
 					}
 				}
 			}, false);
@@ -200,7 +193,7 @@ class ModelProperty<T> {
 	}
 
 	private syncDependencies(instance: ModelProperty<T>): void {
-		if(!this.modelView.isInitialization)
+		if (!this.modelView.isInitialization)
 			instance.component.dispatchEvent(instance.componentSync);
 		instance.pendingSync = {};
 	}
@@ -208,9 +201,9 @@ class ModelProperty<T> {
 	private onBindingChange(args: CustomEvent): void {
 		args.preventDefault();
 
-		this.setComponentBinding(args.detail);		
+		this.setComponentBinding(args.detail);
 
-		if (!this.modelView.isInitialization){			
+		if (!this.modelView.isInitialization) {
 			this.modelView.checkBindDependencies(args);
 		}
 	}
@@ -237,13 +230,13 @@ class ModelProperty<T> {
 			}
 		}
 
-		if(this._component instanceof HTMLSelectElement && this._template.dataset 
-			&& (this._template.dataset['dtValue'] || this._template.dataset['dtText'])){
+		if (this._component instanceof HTMLSelectElement && this._template.dataset
+			&& (this._template.dataset['dtValue'] || this._template.dataset['dtText'])) {
 			if (this._template.dataset['dtValue'])
 				this.bindings[propName].selectValueProp = this._template.dataset['dtValue'];
 			else
 				this.bindings[propName].selectValueProp = this._template.dataset['dtText'];
-				
+
 		}
 
 		var element = this._template.cloneNode(true);
@@ -262,7 +255,7 @@ class ModelProperty<T> {
 			}
 
 		return prop;
-	}	
+	}
 
 	private syncComponentChange(comp: any, attrName: string): void {
 		if (comp instanceof HTMLElement) {
@@ -310,7 +303,7 @@ class ModelProperty<T> {
 
 				if (propName.indexOf('|') !== -1) {
 					propName = propName.replace(this.modelView.modelName + '|', '');
-					if(propName.indexOf('#') === -1)
+					if (propName.indexOf('#') === -1)
 						propName = propName.replace('|', '.');
 				}
 
@@ -380,8 +373,8 @@ class ModelProperty<T> {
 					}
 				}
 			}
-			else if (typeof (binding.value) !== "undefined"){
-				if(internalComponent['multiple']) {
+			else if (typeof (binding.value) !== "undefined") {
+				if (internalComponent['multiple']) {
 					var lenght = internalComponent.children.length;
 
 					for (var i = 0; i < lenght; i++) {
@@ -403,7 +396,7 @@ class ModelProperty<T> {
 
 		if (source['mutated-accesors'] && source['mutated-accesors'].indexOf(propertyName) != -1)
 			return;
-		
+
 		var privateProp = "_" + propertyName;
 		source[privateProp] = property;
 
@@ -445,7 +438,7 @@ class ModelProperty<T> {
 		instance.dispatchEvents = [];
 		for (var compBind in instance.componentBindings) {
 			if (typeof (instance.component[compBind]) != undefined
-			 && instance.component[compBind].__proto__ !== HTMLCollection.prototype){
+				&& instance.component[compBind].__proto__ !== HTMLCollection.prototype) {
 				if (instance.component['multiple']) {
 					var lenght = instance.component.children.length;
 					var arrValue = [];

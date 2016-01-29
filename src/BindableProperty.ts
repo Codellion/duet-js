@@ -52,7 +52,7 @@ class BindableProperty {
 		if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && this.dirty == true) {
 			var result: any = null;
 			var func = this._funcExpresion;
-			if(func == null) {
+			if (func == null) {
 				func = this._internalExpression.slice(1);
 
 				if (func.indexOf("=>") != -1)
@@ -60,27 +60,27 @@ class BindableProperty {
 			}
 
 			if (this._internalExpression.indexOf('@') == 0) {
-				this._eventExpresion = func;		
+				this._eventExpresion = func;
 				var self = this;
-				result = (function() { 
+				result = (function() {
 					window["dt-dispatchEvents"] = [];
 
 					var scope = self._parentValue;
 					scope.model = self.model;
 					scope.view = this;
 
-					var evalFunction = DynamicCode.evalInContext(self._eventExpresion, scope); 
+					var evalFunction = DynamicCode.evalInContext(self._eventExpresion, scope);
 
 					scope.model = undefined;
 					scope.view = undefined;
 
 					return evalFunction;
-				});				
+				});
 			}
 			else {
 				this._funcExpresion = func;
 
-				if(!this._funcIsChecked && func.indexOf('this.') == 0 && func.indexOf('(') != -1){
+				if (!this._funcIsChecked && func.indexOf('this.') == 0 && func.indexOf('(') != -1) {
 					var funcAux = func.replace('this.', '');
 					funcAux = funcAux.slice(0, funcAux.indexOf('('));
 					this.isFunction = this._parentValue[funcAux] ? typeof this._parentValue[funcAux] === "function" : false;
@@ -98,14 +98,14 @@ class BindableProperty {
 				result = DynamicCode.evalInContext(func, scope);
 
 				scope.model = undefined;
-				scope.view = undefined;				
+				scope.view = undefined;
 			}
 
 			this._value = result;
 			this.dirty = false;
 		}
 		else {
-			if(typeof this._value === "function" && this._funcExpresion === null) {
+			if (typeof this._value === "function" && this._funcExpresion === null) {
 				var scope = this._parentValue;
 				var model = this.model;
 				var view = this.htmlComponent;
@@ -120,23 +120,22 @@ class BindableProperty {
 					window["dt-dispatchEvents"] = [];
 					scope[funcExpress]();
 					scope.model = undefined;
-					scope.view = undefined;	
-				 });
+					scope.view = undefined;
+				});
 			}
 			else if ((this.htmlComponent instanceof HTMLSelectElement) && this.htmlComponent.dataset
-			&& this.htmlComponent.dataset['dtValue']
-			&& this.htmlComponent.dataset['dtValue'] === this.internalExpression
-			&& this.htmlComponent.dataset['dtChildren']
-			&& this.dirty) {
+				&& this.htmlComponent.dataset['dtValue']
+				&& this.htmlComponent.dataset['dtValue'] === this.internalExpression
+				&& this.htmlComponent.dataset['dtChildren']
+				&& this.dirty) {
 				var childProp = this.htmlComponent.dataset['dtChildren'];
 				var filterProp = this._parentValue["_" + childProp].selectValueProp;
-				if(typeof filterProp !== "undefined"){
+				if (typeof filterProp !== "undefined") {
 					var selectComp = <HTMLSelectElement>this.htmlComponent;
 
-					if(!selectComp.multiple)
+					if (!selectComp.multiple)
 						this._objectValue = this._parentValue[childProp].find(n => n[filterProp] === selectComp.value);
-					else
-					{
+					else {
 						var lenght = selectComp.children.length;
 						var arrValue = [];
 
@@ -155,13 +154,13 @@ class BindableProperty {
 		}
 
 		return this._value;
-    }
+	}
 
-    get objectValue(): any {
+	get objectValue(): any {
 		return this._objectValue;
 	}
-   
-    get stringValue(): string {
+
+	get stringValue(): string {
 		var result: string = "";
 
 		if (this.objectValue != null || typeof this.objectValue == "object")
@@ -172,22 +171,22 @@ class BindableProperty {
 		return result;
 	}
 
-    set value(value: any) {
-        this._value = value;
-        if(!this.ignore){
+	set value(value: any) {
+		this._value = value;
+		if (!this.ignore) {
 			this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
 			document.dispatchEvent(this.propertyChange);
-        }
-    }
+		}
+	}
 
-    set internalValue(value: any) {
+	set internalValue(value: any) {
 		this._value = value;
-    }
+	}
 
 	get propertyChangeEvent(): string {
 		return "propertyChange" + this.name;
 	}
-	
+
 	constructor(propertyName: string, internalExpression: string, value: any, parentValue: any, model: any, element: HTMLElement, isIndependent?: boolean) {
 		this.name = propertyName;
 		this._internalExpression = internalExpression;
@@ -201,7 +200,7 @@ class BindableProperty {
 		this.ignore = false;
 		this._funcDefinitionString = null;
 
-		if(Array.isArray(value) || value instanceof ObservableArray) {
+		if (Array.isArray(value) || value instanceof ObservableArray) {
 			if (Array.isArray(value)) {
 				var obsArr: ObservableArray<any> = null;
 				if (!isIndependent)
@@ -213,8 +212,8 @@ class BindableProperty {
 				this.value = obsArr;
 			}
 			else
-				this.value = value;		
-			this.dirty = true;		
+				this.value = value;
+			this.dirty = true;
 		}
 		else {
 			this.value = value;
@@ -249,7 +248,7 @@ class BindableProperty {
 			var auxAccesors = value['mutated-accesors'];
 			for (var i in auxAccesors) {
 				var mutatedProp = auxAccesors[i];
-				if (mutatedProp.indexOf('#') === -1 && mutatedProp.indexOf('@') === -1){
+				if (mutatedProp.indexOf('#') === -1 && mutatedProp.indexOf('@') === -1) {
 					var internalVal = null;
 
 					if (value[mutatedProp] instanceof BindableProperty)
@@ -257,13 +256,13 @@ class BindableProperty {
 					else if (typeof value[mutatedProp] === "object")
 						internalVal = this.originalObject(value[mutatedProp]);
 					else
-						internalVal = value[mutatedProp];	
+						internalVal = value[mutatedProp];
 
 					if (Array.isArray(ori))
 						ori.push(internalVal);
 					else
 						ori[mutatedProp] = internalVal;
-				}				
+				}
 			}
 		}
 		else if (Array.isArray(value) || value instanceof ObservableArray) {
@@ -277,3 +276,4 @@ class BindableProperty {
 		return ori;
 	}
 }
+

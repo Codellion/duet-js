@@ -1,5 +1,6 @@
 /// <reference path="ModelView.ts" />
 /// <reference path="BindableProperty.ts" />
+/// <reference path="IDictionary.ts" />
 var ModelProperty = (function () {
     function ModelProperty(modelView, component) {
         var _this = this;
