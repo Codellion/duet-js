@@ -19,11 +19,11 @@
 			  	return this.radioSelectedOptionValue == this.view.value;
 			  }),
 			  changeRadioSelect: (function(){  	
-			  	this.model.radioSelectedOptionValue = this.view.value;
+			  	this.radioSelectedOptionValue = this.view.value;
 			  })
 			};
 
-			view = new ModelView("controls", model);
+			view = duet.bind("controls", model);
 	}
 	
 </script>

@@ -192,6 +192,21 @@ var BindableProperty = (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(BindableProperty.prototype, "ignore", {
+        get: function () {
+            return this._ignore;
+        },
+        set: function (value) {
+            if (this._ignore && !value) {
+                this._ignore = value;
+                this.dispatchChangeEvent();
+            }
+            else
+                this._ignore = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
     BindableProperty.prototype.dispatchChangeEvent = function (argName) {
         if (this.ignore)
             return;

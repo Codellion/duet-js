@@ -374,13 +374,14 @@ class ModelProperty<T> {
 				}
 			}
 			else if (typeof (binding.value) !== "undefined") {
-				if (internalComponent['multiple']) {
+				if (internalComponent['multiple'] && prop === "value") {
 					var lenght = internalComponent.children.length;
 
 					for (var i = 0; i < lenght; i++) {
-						if (binding.value != null && binding.value.indexOf(internalComponent.children[i]['value']) !== -1) {
+						if (binding.value != null && binding.value.indexOf(internalComponent.children[i]['value']) !== -1)
 							internalComponent.children[i]['selected'] = true;
-						}
+						else
+							internalComponent.children[i]['selected'] = false;
 					}
 				}
 				else {

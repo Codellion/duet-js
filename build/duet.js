@@ -192,6 +192,21 @@ var BindableProperty = (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(BindableProperty.prototype, "ignore", {
+        get: function () {
+            return this._ignore;
+        },
+        set: function (value) {
+            if (this._ignore && !value) {
+                this._ignore = value;
+                this.dispatchChangeEvent();
+            }
+            else
+                this._ignore = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
     BindableProperty.prototype.dispatchChangeEvent = function (argName) {
         if (this.ignore)
             return;
@@ -600,12 +615,13 @@ var ModelProperty = (function () {
                 }
             }
             else if (typeof (binding.value) !== "undefined") {
-                if (internalComponent['multiple']) {
+                if (internalComponent['multiple'] && prop === "value") {
                     var lenght = internalComponent.children.length;
                     for (var i = 0; i < lenght; i++) {
-                        if (binding.value != null && binding.value.indexOf(internalComponent.children[i]['value']) !== -1) {
+                        if (binding.value != null && binding.value.indexOf(internalComponent.children[i]['value']) !== -1)
                             internalComponent.children[i]['selected'] = true;
-                        }
+                        else
+                            internalComponent.children[i]['selected'] = false;
                     }
                 }
                 else {

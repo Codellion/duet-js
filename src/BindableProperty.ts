@@ -10,7 +10,6 @@ class BindableProperty {
 	model: any;
 	htmlComponent: HTMLElement;
 	references: Array<string>;
-	ignore: boolean;
 	selectValueProp: string;
 
 	private _internalExpression: string;
@@ -25,6 +24,7 @@ class BindableProperty {
 	private _funcDefinition: any;
 	private _funcDefinitionString: string;
 	private _objectValue: any;
+	private _ignore: boolean;
 
 	propertyChange: CustomEvent;
 
@@ -185,6 +185,20 @@ class BindableProperty {
 
 	get propertyChangeEvent(): string {
 		return "propertyChange" + this.name;
+	}
+
+	get ignore(): boolean{
+		return this._ignore;
+	}
+
+	set ignore(value:boolean) {
+
+		if(this._ignore && !value){
+			this._ignore = value;
+			this.dispatchChangeEvent();
+		}
+		else
+			this._ignore = value;
 	}
 
 	constructor(propertyName: string, internalExpression: string, value: any, parentValue: any, model: any, element: HTMLElement, isIndependent?: boolean) {

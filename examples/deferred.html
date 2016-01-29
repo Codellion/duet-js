@@ -24,7 +24,6 @@
 
 		        if(type === "deferred"){
 			        this._data.ignore = false;
-			        this._data.dispatchChangeEvent();
 		        }
 		        
 		        this.timing = (new Date().getTime() - starttime) + ' ms';
@@ -32,7 +31,7 @@
 		    this.timing = ''
 		}
 
-		view = new ModelView("deferred", { examples: [new AppViewModel("deferred"), new AppViewModel("standard")] });
+		view = duet.bind("deferred", { examples: [new AppViewModel("deferred"), new AppViewModel("standard")] });
 	}
 	
 </script>
