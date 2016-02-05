@@ -100,10 +100,8 @@ class ModelView<T> {
 
 			if (docElements.length > 0) {
 				docElements.forEach((element, index) => {
-					if (element instanceof HTMLElement) {
-						var newProperty = new ModelProperty(this, <HTMLElement>element);
-						this.properties.push(newProperty);
-					}
+					var newProperty = new ModelProperty(this, <HTMLElement>element);
+					this.properties.push(newProperty);
 				});
 			}
 

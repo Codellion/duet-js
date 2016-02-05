@@ -29,6 +29,10 @@ class ModelProperty<T> {
 		return this._modelView.bindings;
 	}
 
+	set bindings(value:IDictionary<BindableProperty>) {
+		this._modelView.bindings = value;
+	}
+
 	get modelView(): ModelView<T> {
 		return this._modelView;
 	}
@@ -86,7 +90,14 @@ class ModelProperty<T> {
 			if (this.component[bindName] != undefined && this.component[bindName].length > 0
 				&& this.component[bindName][0] instanceof HTMLElement) {
 				var node = this.component[bindName][0];
-				this._template = <HTMLElement>node;
+
+				if (typeof node === "function") {
+					this._template = node.contentDocument.body.children[0];
+				}
+				else {
+					this._template = <HTMLElement>node;
+				}
+
 				this.component.removeChild(node);
 			}
 		}

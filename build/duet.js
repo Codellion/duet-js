@@ -1,57 +1,181 @@
-/// <reference path="ObservableArray.ts" />
-/// <reference path="ModelProperty.ts" />
-/// <reference path="DynamicCode.ts" />
-var BindableProperty = (function () {
-    function BindableProperty(propertyName, internalExpression, value, parentValue, model, element, isIndependent) {
-        this.dirty = false;
-        this._funcExpresion = null;
-        this._funcIsChecked = false;
-        this.name = propertyName;
-        this._internalExpression = internalExpression;
-        this._tempValue = null;
-        this._parentValue = parentValue;
-        this._externalReference = null;
-        this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
-        this.model = model;
-        this.htmlComponent = element;
-        this.references = new Array();
-        this.ignore = false;
-        this._funcDefinitionString = null;
-        if (Array.isArray(value) || value instanceof ObservableArray) {
-            if (Array.isArray(value)) {
-                var obsArr = null;
-                if (!isIndependent)
-                    obsArr = new ObservableArray(propertyName);
-                else
-                    obsArr = new ObservableArray(propertyName, this);
-                obsArr.initialize(value);
-                this.value = obsArr;
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+var ObservableItem = (function () {
+    function ObservableItem(name, item, index) {
+        this.name = name;
+        this.item = item;
+        this.index = index;
+    }
+    return ObservableItem;
+}());
+var ObservableArray = (function (_super) {
+    __extends(ObservableArray, _super);
+    function ObservableArray(name, binding) {
+        var _self = this;
+        _super.call(this);
+        this._name = name;
+        if (binding)
+            this._binding = binding;
+        else
+            this._binding = null;
+    }
+    Object.defineProperty(ObservableArray.prototype, "name", {
+        get: function () {
+            return this._name;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ObservableArray.prototype, "propertyChangeEvent", {
+        get: function () {
+            return "propertyChange" + this.name;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    ObservableArray.prototype.initialize = function (items) {
+        var _this = this;
+        items.forEach(function (n) { return _super.prototype.push.call(_this, n); });
+    };
+    ObservableArray.prototype.push = function () {
+        var _this = this;
+        var items = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            items[_i - 0] = arguments[_i];
+        }
+        var res = 0;
+        items.forEach(function (n) {
+            n["_parentReference"] = _this;
+            res = _super.prototype.push.call(_this, n);
+            if (_this._binding === null) {
+                _this.elementAdded = new CustomEvent(_this.name + "elementAdded", { detail: new ObservableItem(_this.name, n, res) });
+                document.dispatchEvent(_this.elementAdded);
             }
             else
-                this.value = value;
-            this.dirty = true;
+                _this._binding.dispatchChangeEvent(null);
+        });
+        return res;
+    };
+    ObservableArray.prototype.pop = function () {
+        var index = this.length - 1;
+        var res = _super.prototype.pop.call(this);
+        if (this._binding === null) {
+            this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, index) });
+            document.dispatchEvent(this.elementRemoved);
         }
-        else {
-            this.value = value;
+        else
+            this._binding.dispatchChangeEvent(null);
+        return res;
+    };
+    ObservableArray.prototype.unshift = function () {
+        var _this = this;
+        var items = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            items[_i - 0] = arguments[_i];
         }
+        var res = 0;
+        items.forEach(function (n) {
+            n["_parentReference"] = _this;
+            res = _super.prototype.unshift.call(_this, n);
+            if (_this._binding) {
+                _this.elementAdded = new CustomEvent(_this.name + "elementAdded", { detail: new ObservableItem(_this.name, n, res) });
+                document.dispatchEvent(_this.elementAdded);
+            }
+            else
+                _this._binding.dispatchChangeEvent(null);
+        });
+        return res;
+    };
+    ObservableArray.prototype.shift = function () {
+        var res = _super.prototype.shift.call(this);
+        if (this._binding === null) {
+            this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, 0) });
+            document.dispatchEvent(this.elementRemoved);
+        }
+        else
+            this._binding.dispatchChangeEvent(null);
+        return res;
+    };
+    ObservableArray.prototype.change = function (index, value) {
+        var origin = this[index];
+        for (var prop in origin) {
+            if (value[prop])
+                origin[prop] = value[prop];
+        }
+    };
+    return ObservableArray;
+}(Array));
+(function () {
+    function CustomEvent(event, params) {
+        params = params || { bubbles: false, cancelable: false, detail: undefined };
+        var evt = document.createEvent('CustomEvent');
+        evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+        return evt;
     }
-    Object.defineProperty(BindableProperty.prototype, "funcDefinition", {
-        get: function () {
-            if (this._funcDefinitionString == null)
-                this._funcDefinitionString = this._funcDefinition.toString().replace(' ', '');
-            return this._funcDefinitionString;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(BindableProperty.prototype, "internalExpression", {
-        get: function () {
-            return this._internalExpression;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(BindableProperty.prototype, "dispatchEvents", {
+    CustomEvent.prototype = Event.prototype;
+    window["CustomEvent"] = CustomEvent;
+})();
+var ModelView = (function () {
+    function ModelView(modelName, model, elementContainer, elementModel, oriModel) {
+        var _this = this;
+        this.modelName = modelName;
+        this.properties = new Array();
+        if (!this.bindings)
+            this.bindings = {};
+        this.subModels = new Array();
+        this.isInitialization = true;
+        if (oriModel)
+            this.originalModel = oriModel;
+        else
+            this.originalModel = this;
+        if (model) {
+            this.model = model;
+            if (!model["mutated-observation"])
+                this.createObservableObject(this.model, this.modelName);
+            else {
+                var auxAccesor = model["mutated-accesors"];
+                for (var i in auxAccesor) {
+                    var newBindName = this.modelName + '|' + auxAccesor[i];
+                    var oldBind = model["_" + auxAccesor[i]];
+                    oldBind.name = this.modelName + '|' + auxAccesor[i];
+                    this.bindings[newBindName] = oldBind;
+                }
+            }
+        }
+        if (modelName) {
+            var docElements = [];
+            if (elementContainer) {
+                var totalDocElements = Array.prototype.slice.call(elementContainer.querySelectorAll("[data-dt='" + elementModel + "']"));
+                var exclude = Array.prototype.slice.call(elementContainer.querySelectorAll('[data-dt=' + elementModel + '] [data-dt=' + elementModel + ']'));
+                if (totalDocElements.length !== exclude.length) {
+                    for (var k = 0; k < totalDocElements.length; k++)
+                        if (exclude.indexOf(totalDocElements[k]) === -1)
+                            docElements.push(totalDocElements[k]);
+                }
+                else
+                    docElements = totalDocElements;
+                var mdContainer = new ModelProperty(this, elementContainer);
+                this.properties.push(mdContainer);
+            }
+            else
+                docElements = Array.prototype.slice.call(document.querySelectorAll("[data-dt='" + modelName + "']"));
+            if (docElements.length > 0) {
+                docElements.forEach(function (element, index) {
+                    var newProperty = new ModelProperty(_this, element);
+                    _this.properties.push(newProperty);
+                });
+            }
+            this.properties.forEach(function (n) {
+                for (var bindName in n.internalBindings)
+                    n.setComponentBinding(n.bindings[bindName]);
+            });
+        }
+        this.isInitialization = false;
+    }
+    Object.defineProperty(ModelView.prototype, "dispatchEvents", {
         get: function () {
             if (!window["dt-dispatchEvents"])
                 window["dt-dispatchEvents"] = [];
@@ -60,264 +184,107 @@ var BindableProperty = (function () {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(BindableProperty.prototype, "value", {
+    Object.defineProperty(ModelView.prototype, "bindings", {
         get: function () {
-            var propName = this.name;
-            if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && this.dirty == true) {
-                var result = null;
-                var func = this._funcExpresion;
-                if (func == null) {
-                    func = this._internalExpression.slice(1);
-                    if (func.indexOf("=>") != -1)
-                        func = DynamicCode.parseLambdaExpression(func);
+            return window[this.modelName + "_dt-bindings"];
+        },
+        set: function (value) {
+            window[this.modelName + "_dt-bindings"] = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ModelView.prototype, "modelName", {
+        get: function () {
+            return this._modelName;
+        },
+        set: function (value) {
+            this._modelName = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    ModelView.prototype.createObservableObject = function (obj, parentName) {
+        var _this = this;
+        if (typeof (obj) !== "object" || (obj && obj["mutated-observation"]))
+            return;
+        var parentPropName = "";
+        if (parentName)
+            parentPropName = parentName;
+        var oriProps = [];
+        for (var objProp in obj)
+            oriProps.push(objProp);
+        for (var objProp in oriProps) {
+            var propertyName = oriProps[objProp];
+            if (propertyName.indexOf('_') != 0 && typeof (obj[propertyName]) !== "function"
+                && propertyName !== "mutated-accesors" && propertyName.indexOf('$') != 0) {
+                var propertyBindName = parentPropName + "|" + propertyName;
+                var result = this.bindings[propertyBindName];
+                if (typeof (result) === "undefined") {
+                    result = new BindableProperty(propertyBindName, propertyName, obj[propertyName], obj, this.originalModel.model, null, true);
                 }
-                if (this._internalExpression.indexOf('@') == 0) {
-                    this._eventExpresion = func;
-                    var self = this;
-                    result = (function () {
-                        window["dt-dispatchEvents"] = [];
-                        var scope = self._parentValue;
-                        scope.model = self.model;
-                        scope.view = this;
-                        var evalFunction = DynamicCode.evalInContext(self._eventExpresion, scope);
-                        scope.model = undefined;
-                        scope.view = undefined;
-                        return evalFunction;
-                    });
-                }
-                else {
-                    this._funcExpresion = func;
-                    if (!this._funcIsChecked && func.indexOf('this.') == 0 && func.indexOf('(') != -1) {
-                        var funcAux = func.replace('this.', '');
-                        funcAux = funcAux.slice(0, funcAux.indexOf('('));
-                        this.isFunction = this._parentValue[funcAux] ? typeof this._parentValue[funcAux] === "function" : false;
-                        if (this.isFunction)
-                            this._funcDefinition = this._parentValue[funcAux];
-                        this._funcIsChecked = true;
-                    }
-                    var scope = this._parentValue;
-                    scope.model = this.model;
-                    scope.view = this.htmlComponent;
-                    result = DynamicCode.evalInContext(func, scope);
-                    scope.model = undefined;
-                    scope.view = undefined;
-                }
-                this._value = result;
-                this.dirty = false;
-            }
-            else {
-                if (typeof this._value === "function" && this._funcExpresion === null) {
-                    var scope = this._parentValue;
-                    var model = this.model;
-                    var view = this.htmlComponent;
-                    this._funcExpresion = this._value.toString();
-                    scope['_bind_' + this._internalExpression] = this._value;
-                    var funcExpress = "_bind_" + this._internalExpression;
-                    this._value = (function () {
-                        scope.model = model;
-                        scope.view = this;
-                        window["dt-dispatchEvents"] = [];
-                        scope[funcExpress]();
-                        scope.model = undefined;
-                        scope.view = undefined;
-                    });
-                }
-                else if ((this.htmlComponent instanceof HTMLSelectElement) && this.htmlComponent.dataset
-                    && this.htmlComponent.dataset['dtValue']
-                    && this.htmlComponent.dataset['dtValue'] === this.internalExpression
-                    && this.htmlComponent.dataset['dtChildren']
-                    && this.dirty) {
-                    var childProp = this.htmlComponent.dataset['dtChildren'];
-                    var filterProp = this._parentValue["_" + childProp].selectValueProp;
-                    if (typeof filterProp !== "undefined") {
-                        var selectComp = this.htmlComponent;
-                        if (!selectComp.multiple)
-                            this._objectValue = this._parentValue[childProp].find(function (n) { return n[filterProp] === selectComp.value; });
-                        else {
-                            var lenght = selectComp.children.length;
-                            var arrValue = [];
-                            for (var i = 0; i < lenght; i++) {
-                                if (selectComp.children[i]['selected']) {
-                                    arrValue.push(this._parentValue[childProp].find(function (n) { return n[filterProp] === selectComp.children[i]['value']; }));
-                                }
-                            }
-                            this._objectValue = arrValue;
+                ModelProperty.createAccesorProperty(propertyName, obj, result);
+                this.createObservableObject(obj[propertyName], propertyBindName);
+                this.bindings[propertyBindName] = result;
+                document.addEventListener(result.propertyChangeEvent, function (args) {
+                    if (!_this.isInitialization) {
+                        _this.checkBindDependencies(args);
+                        if (obj["_parentReference"] && obj["_parentReference"]._binding) {
+                            _this.dispatchEvents.push(args.detail.propertyChangeEvent);
+                            obj["_parentReference"]._binding.dispatchChangeEvent(args.detail.internalExpression);
                         }
                     }
-                    this.dirty = false;
-                }
-            }
-            return this._value;
-        },
-        set: function (value) {
-            this._value = value;
-            if (!this.ignore) {
-                this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
-                document.dispatchEvent(this.propertyChange);
-            }
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(BindableProperty.prototype, "objectValue", {
-        get: function () {
-            return this._objectValue;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(BindableProperty.prototype, "stringValue", {
-        get: function () {
-            var result = "";
-            if (this.objectValue != null || typeof this.objectValue == "object")
-                result = JSON.stringify(this.originalObject(this.objectValue));
-            else
-                result = this.value.toString();
-            return result;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(BindableProperty.prototype, "internalValue", {
-        set: function (value) {
-            this._value = value;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(BindableProperty.prototype, "propertyChangeEvent", {
-        get: function () {
-            return "propertyChange" + this.name;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(BindableProperty.prototype, "ignore", {
-        get: function () {
-            return this._ignore;
-        },
-        set: function (value) {
-            if (this._ignore && !value) {
-                this._ignore = value;
-                this.dispatchChangeEvent();
-            }
-            else
-                this._ignore = value;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    BindableProperty.prototype.dispatchChangeEvent = function (argName) {
-        if (this.ignore)
-            return;
-        if (this.dispatchEvents.indexOf(this.propertyChangeEvent) !== -1)
-            return;
-        if (argName)
-            this._externalReference = argName;
-        this.dirty = true;
-        this.dispatchEvents.push(this.propertyChangeEvent);
-        this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
-        document.dispatchEvent(this.propertyChange);
-    };
-    BindableProperty.prototype.originalObject = function (value) {
-        var ori = null;
-        if (Array.isArray(value) || value instanceof ObservableArray)
-            ori = [];
-        else
-            ori = {};
-        if (value.hasOwnProperty('mutated-accesors')) {
-            var auxAccesors = value['mutated-accesors'];
-            for (var i in auxAccesors) {
-                var mutatedProp = auxAccesors[i];
-                if (mutatedProp.indexOf('#') === -1 && mutatedProp.indexOf('@') === -1) {
-                    var internalVal = null;
-                    if (value[mutatedProp] instanceof BindableProperty)
-                        internalVal = value[mutatedProp].stringValue;
-                    else if (typeof value[mutatedProp] === "object")
-                        internalVal = this.originalObject(value[mutatedProp]);
-                    else
-                        internalVal = value[mutatedProp];
-                    if (Array.isArray(ori))
-                        ori.push(internalVal);
-                    else
-                        ori[mutatedProp] = internalVal;
-                }
+                }, false);
             }
         }
-        else if (Array.isArray(value) || value instanceof ObservableArray) {
-            for (var j = 0; j < value.length; j++)
-                ori.push(this.originalObject(value[j]));
-        }
-        else
-            ori = value;
-        return ori;
+        if (obj != null)
+            obj["mutated-observation"] = true;
     };
-    return BindableProperty;
-})();
-
-var DynamicCode = (function () {
-    function DynamicCode() {
-    }
-    DynamicCode.evalInContext = function (js, context) {
-        return function () { return eval(js); }.call(context);
-    };
-    DynamicCode.parseLambdaExpression = function (js) {
-        var result = js;
-        var index = js.indexOf("=>", index);
-        while (index != -1) {
-            var startIndex = DynamicCode.getLamdbaStart(js, index);
-            var endCurrentSymbol = js.length - 1;
-            var openFuncs = 0;
-            var lamdbaFunc = "";
-            for (var i = index; i < js.length - 1; i++) {
-                if (js[i] === ')') {
-                    if (openFuncs == 0) {
-                        endCurrentSymbol = i;
-                        break;
-                    }
-                    else
-                        openFuncs--;
-                }
-                if (js[i] === '(')
-                    openFuncs++;
-            }
-            lamdbaFunc = DynamicCode.createLambdaFunction(js.slice(startIndex, endCurrentSymbol + 1));
-            result = result.slice(0, startIndex + 1) + lamdbaFunc + result.slice(endCurrentSymbol);
-            index = result.indexOf("=>");
-        }
-        return result;
-    };
-    DynamicCode.createLambdaFunction = function (js) {
-        var result = "";
-        var symbolIndex = js.indexOf("=>");
-        var startIndex = DynamicCode.getLamdbaStart(js, symbolIndex);
-        var endIndex = js.length - 1;
-        var param = js.slice(startIndex + 1, symbolIndex);
-        var code = js.slice(symbolIndex + 2, endIndex);
-        if (code.indexOf("=>") != -1) {
-            code = DynamicCode.parseLambdaExpression(code);
-        }
-        result = "(function(" + param + ") { return (";
-        result += code + ");})";
-        return result;
-    };
-    DynamicCode.getLamdbaStart = function (js, symbolIndex) {
-        var startIndex = symbolIndex;
-        for (var i = symbolIndex; i > -1; i--) {
-            if (js[i] === '(') {
-                startIndex = i;
-                break;
+    ModelView.prototype.checkBindDependencies = function (args) {
+        var name = args.detail.internalExpression;
+        if (args.detail["_externalReference"] && args.detail["_externalReference"] != null)
+            name = args.detail["_externalReference"];
+        for (var bindingName in this.bindings) {
+            var binding = this.bindings[bindingName];
+            if ((binding.internalExpression.indexOf('#') == 0 || binding.isFunction) && binding.internalExpression !== name) {
+                var expr = binding.internalExpression;
+                if (binding.isFunction)
+                    expr = binding.funcDefinition;
+                if (this.containsBindReference(expr, name))
+                    binding.dispatchChangeEvent();
+                else if (this.containsBindReference(expr, '$' + name))
+                    binding.dispatchChangeEvent();
+                else if (this.containsBindReference(expr, name + '_stringify'))
+                    binding.dispatchChangeEvent();
             }
         }
-        return startIndex;
     };
-    return DynamicCode;
-})();
-
-
-/// <reference path="ModelView.ts" />
-/// <reference path="BindableProperty.ts" />
-/// <reference path="IDictionary.ts" />
+    ModelView.isAlphanumeric = function (str, i) {
+        var code = str.charCodeAt(i);
+        if (!(code > 47 && code < 58) &&
+            !(code > 64 && code < 91) &&
+            !(code > 96 && code < 123)) {
+            return false;
+        }
+        return true;
+    };
+    ModelView.prototype.containsBindReference = function (bindingName, reference) {
+        var res = false;
+        var startIndex = bindingName.indexOf(reference);
+        while (startIndex != -1) {
+            if (bindingName[startIndex - 1] === '.' && bindingName.length >= startIndex + reference.length
+                && !ModelView.isAlphanumeric(bindingName, startIndex + reference.length)) {
+                res = true;
+                startIndex = -1;
+            }
+            else {
+                startIndex = bindingName.indexOf(reference, startIndex + 1);
+            }
+        }
+        return res;
+    };
+    return ModelView;
+}());
 var ModelProperty = (function () {
     function ModelProperty(modelView, component) {
         var _this = this;
@@ -342,7 +309,12 @@ var ModelProperty = (function () {
             if (this.component[bindName] != undefined && this.component[bindName].length > 0
                 && this.component[bindName][0] instanceof HTMLElement) {
                 var node = this.component[bindName][0];
-                this._template = node;
+                if (typeof node === "function") {
+                    this._template = node.contentDocument.body.children[0];
+                }
+                else {
+                    this._template = node;
+                }
                 this.component.removeChild(node);
             }
         }
@@ -398,6 +370,9 @@ var ModelProperty = (function () {
     Object.defineProperty(ModelProperty.prototype, "bindings", {
         get: function () {
             return this._modelView.bindings;
+        },
+        set: function (value) {
+            this._modelView.bindings = value;
         },
         enumerable: true,
         configurable: true
@@ -687,82 +662,116 @@ var ModelProperty = (function () {
         instance.syncDependencies(instance);
     };
     return ModelProperty;
-})();
-
-/// <reference path="ModelProperty.ts" />
-/// <reference path="BindableProperty.ts" />
-/// <reference path="IDictionary.ts" />
-//IE Fix
-(function () {
-    function CustomEvent(event, params) {
-        params = params || { bubbles: false, cancelable: false, detail: undefined };
-        var evt = document.createEvent('CustomEvent');
-        evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
-        return evt;
+}());
+var DynamicCode = (function () {
+    function DynamicCode() {
     }
-    CustomEvent.prototype = Event.prototype;
-    window["CustomEvent"] = CustomEvent;
-})();
-var ModelView = (function () {
-    function ModelView(modelName, model, elementContainer, elementModel, oriModel) {
-        var _this = this;
-        this.modelName = modelName;
-        this.properties = new Array();
-        if (!this.bindings)
-            this.bindings = {};
-        this.subModels = new Array();
-        this.isInitialization = true;
-        if (oriModel)
-            this.originalModel = oriModel;
-        else
-            this.originalModel = this;
-        if (model) {
-            this.model = model;
-            if (!model["mutated-observation"])
-                this.createObservableObject(this.model, this.modelName);
-            else {
-                var auxAccesor = model["mutated-accesors"];
-                for (var i in auxAccesor) {
-                    var newBindName = this.modelName + '|' + auxAccesor[i];
-                    var oldBind = model["_" + auxAccesor[i]];
-                    oldBind.name = this.modelName + '|' + auxAccesor[i];
-                    this.bindings[newBindName] = oldBind;
+    DynamicCode.evalInContext = function (js, context) {
+        return function () { return eval(js); }.call(context);
+    };
+    DynamicCode.parseLambdaExpression = function (js) {
+        var result = js;
+        var index = js.indexOf("=>", index);
+        while (index != -1) {
+            var startIndex = DynamicCode.getLamdbaStart(js, index);
+            var endCurrentSymbol = js.length - 1;
+            var openFuncs = 0;
+            var lamdbaFunc = "";
+            for (var i = index; i < js.length - 1; i++) {
+                if (js[i] === ')') {
+                    if (openFuncs == 0) {
+                        endCurrentSymbol = i;
+                        break;
+                    }
+                    else
+                        openFuncs--;
                 }
+                if (js[i] === '(')
+                    openFuncs++;
+            }
+            lamdbaFunc = DynamicCode.createLambdaFunction(js.slice(startIndex, endCurrentSymbol + 1));
+            result = result.slice(0, startIndex + 1) + lamdbaFunc + result.slice(endCurrentSymbol);
+            index = result.indexOf("=>");
+        }
+        return result;
+    };
+    DynamicCode.createLambdaFunction = function (js) {
+        var result = "";
+        var symbolIndex = js.indexOf("=>");
+        var startIndex = DynamicCode.getLamdbaStart(js, symbolIndex);
+        var endIndex = js.length - 1;
+        var param = js.slice(startIndex + 1, symbolIndex);
+        var code = js.slice(symbolIndex + 2, endIndex);
+        if (code.indexOf("=>") != -1) {
+            code = DynamicCode.parseLambdaExpression(code);
+        }
+        result = "(function(" + param + ") { return (";
+        result += code + ");})";
+        return result;
+    };
+    DynamicCode.getLamdbaStart = function (js, symbolIndex) {
+        var startIndex = symbolIndex;
+        for (var i = symbolIndex; i > -1; i--) {
+            if (js[i] === '(') {
+                startIndex = i;
+                break;
             }
         }
-        if (modelName) {
-            var docElements = [];
-            if (elementContainer) {
-                var totalDocElements = Array.prototype.slice.call(elementContainer.querySelectorAll("[data-dt='" + elementModel + "']"));
-                var exclude = Array.prototype.slice.call(elementContainer.querySelectorAll('[data-dt=' + elementModel + '] [data-dt=' + elementModel + ']'));
-                if (totalDocElements.length !== exclude.length) {
-                    for (var k = 0; k < totalDocElements.length; k++)
-                        if (exclude.indexOf(totalDocElements[k]) === -1)
-                            docElements.push(totalDocElements[k]);
-                }
+        return startIndex;
+    };
+    return DynamicCode;
+}());
+var BindableProperty = (function () {
+    function BindableProperty(propertyName, internalExpression, value, parentValue, model, element, isIndependent) {
+        this.dirty = false;
+        this._funcExpresion = null;
+        this._funcIsChecked = false;
+        this.name = propertyName;
+        this._internalExpression = internalExpression;
+        this._tempValue = null;
+        this._parentValue = parentValue;
+        this._externalReference = null;
+        this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
+        this.model = model;
+        this.htmlComponent = element;
+        this.references = new Array();
+        this.ignore = false;
+        this._funcDefinitionString = null;
+        if (Array.isArray(value) || value instanceof ObservableArray) {
+            if (Array.isArray(value)) {
+                var obsArr = null;
+                if (!isIndependent)
+                    obsArr = new ObservableArray(propertyName);
                 else
-                    docElements = totalDocElements;
-                var mdContainer = new ModelProperty(this, elementContainer);
-                this.properties.push(mdContainer);
+                    obsArr = new ObservableArray(propertyName, this);
+                obsArr.initialize(value);
+                this.value = obsArr;
             }
             else
-                docElements = Array.prototype.slice.call(document.querySelectorAll("[data-dt='" + modelName + "']"));
-            if (docElements.length > 0) {
-                docElements.forEach(function (element, index) {
-                    if (element instanceof HTMLElement) {
-                        var newProperty = new ModelProperty(_this, element);
-                        _this.properties.push(newProperty);
-                    }
-                });
-            }
-            this.properties.forEach(function (n) {
-                for (var bindName in n.internalBindings)
-                    n.setComponentBinding(n.bindings[bindName]);
-            });
+                this.value = value;
+            this.dirty = true;
         }
-        this.isInitialization = false;
+        else {
+            this.value = value;
+        }
     }
-    Object.defineProperty(ModelView.prototype, "dispatchEvents", {
+    Object.defineProperty(BindableProperty.prototype, "funcDefinition", {
+        get: function () {
+            if (this._funcDefinitionString == null)
+                this._funcDefinitionString = this._funcDefinition.toString().replace(' ', '');
+            return this._funcDefinitionString;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(BindableProperty.prototype, "internalExpression", {
+        get: function () {
+            return this._internalExpression;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(BindableProperty.prototype, "dispatchEvents", {
         get: function () {
             if (!window["dt-dispatchEvents"])
                 window["dt-dispatchEvents"] = [];
@@ -771,223 +780,200 @@ var ModelView = (function () {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(ModelView.prototype, "bindings", {
+    Object.defineProperty(BindableProperty.prototype, "value", {
         get: function () {
-            return window[this.modelName + "_dt-bindings"];
-        },
-        set: function (value) {
-            window[this.modelName + "_dt-bindings"] = value;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(ModelView.prototype, "modelName", {
-        get: function () {
-            return this._modelName;
-        },
-        set: function (value) {
-            this._modelName = value;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ModelView.prototype.createObservableObject = function (obj, parentName) {
-        var _this = this;
-        if (typeof (obj) !== "object" || (obj && obj["mutated-observation"]))
-            return;
-        var parentPropName = "";
-        if (parentName)
-            parentPropName = parentName;
-        var oriProps = [];
-        for (var objProp in obj)
-            oriProps.push(objProp);
-        for (var objProp in oriProps) {
-            var propertyName = oriProps[objProp];
-            if (propertyName.indexOf('_') != 0 && typeof (obj[propertyName]) !== "function"
-                && propertyName !== "mutated-accesors" && propertyName.indexOf('$') != 0) {
-                var propertyBindName = parentPropName + "|" + propertyName;
-                var result = this.bindings[propertyBindName];
-                if (typeof (result) === "undefined") {
-                    result = new BindableProperty(propertyBindName, propertyName, obj[propertyName], obj, this.originalModel.model, null, true);
+            var propName = this.name;
+            if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && this.dirty == true) {
+                var result = null;
+                var func = this._funcExpresion;
+                if (func == null) {
+                    func = this._internalExpression.slice(1);
+                    if (func.indexOf("=>") != -1)
+                        func = DynamicCode.parseLambdaExpression(func);
                 }
-                ModelProperty.createAccesorProperty(propertyName, obj, result);
-                this.createObservableObject(obj[propertyName], propertyBindName);
-                this.bindings[propertyBindName] = result;
-                document.addEventListener(result.propertyChangeEvent, function (args) {
-                    if (!_this.isInitialization) {
-                        _this.checkBindDependencies(args);
-                        if (obj["_parentReference"] && obj["_parentReference"]._binding) {
-                            _this.dispatchEvents.push(args.detail.propertyChangeEvent);
-                            obj["_parentReference"]._binding.dispatchChangeEvent(args.detail.internalExpression);
-                        }
+                if (this._internalExpression.indexOf('@') == 0) {
+                    this._eventExpresion = func;
+                    var self = this;
+                    result = (function () {
+                        window["dt-dispatchEvents"] = [];
+                        var scope = self._parentValue;
+                        scope.model = self.model;
+                        scope.view = this;
+                        var evalFunction = DynamicCode.evalInContext(self._eventExpresion, scope);
+                        scope.model = undefined;
+                        scope.view = undefined;
+                        return evalFunction;
+                    });
+                }
+                else {
+                    this._funcExpresion = func;
+                    if (!this._funcIsChecked && func.indexOf('this.') == 0 && func.indexOf('(') != -1) {
+                        var funcAux = func.replace('this.', '');
+                        funcAux = funcAux.slice(0, funcAux.indexOf('('));
+                        this.isFunction = this._parentValue[funcAux] ? typeof this._parentValue[funcAux] === "function" : false;
+                        if (this.isFunction)
+                            this._funcDefinition = this._parentValue[funcAux];
+                        this._funcIsChecked = true;
                     }
-                }, false);
-            }
-        }
-        if (obj != null)
-            obj["mutated-observation"] = true;
-    };
-    ModelView.prototype.checkBindDependencies = function (args) {
-        var name = args.detail.internalExpression;
-        if (args.detail["_externalReference"] && args.detail["_externalReference"] != null)
-            name = args.detail["_externalReference"];
-        for (var bindingName in this.bindings) {
-            var binding = this.bindings[bindingName];
-            if ((binding.internalExpression.indexOf('#') == 0 || binding.isFunction) && binding.internalExpression !== name) {
-                var expr = binding.internalExpression;
-                if (binding.isFunction)
-                    expr = binding.funcDefinition;
-                if (this.containsBindReference(expr, name))
-                    binding.dispatchChangeEvent();
-                else if (this.containsBindReference(expr, '$' + name))
-                    binding.dispatchChangeEvent();
-                else if (this.containsBindReference(expr, name + '_stringify'))
-                    binding.dispatchChangeEvent();
-            }
-        }
-    };
-    ModelView.isAlphanumeric = function (str, i) {
-        var code = str.charCodeAt(i);
-        if (!(code > 47 && code < 58) &&
-            !(code > 64 && code < 91) &&
-            !(code > 96 && code < 123)) {
-            return false;
-        }
-        return true;
-    };
-    ModelView.prototype.containsBindReference = function (bindingName, reference) {
-        var res = false;
-        var startIndex = bindingName.indexOf(reference);
-        while (startIndex != -1) {
-            if (bindingName[startIndex - 1] === '.' && bindingName.length >= startIndex + reference.length
-                && !ModelView.isAlphanumeric(bindingName, startIndex + reference.length)) {
-                res = true;
-                startIndex = -1;
+                    var scope = this._parentValue;
+                    scope.model = this.model;
+                    scope.view = this.htmlComponent;
+                    result = DynamicCode.evalInContext(func, scope);
+                    scope.model = undefined;
+                    scope.view = undefined;
+                }
+                this._value = result;
+                this.dirty = false;
             }
             else {
-                startIndex = bindingName.indexOf(reference, startIndex + 1);
+                if (typeof this._value === "function" && this._funcExpresion === null) {
+                    var scope = this._parentValue;
+                    var model = this.model;
+                    var view = this.htmlComponent;
+                    this._funcExpresion = this._value.toString();
+                    scope['_bind_' + this._internalExpression] = this._value;
+                    var funcExpress = "_bind_" + this._internalExpression;
+                    this._value = (function () {
+                        scope.model = model;
+                        scope.view = this;
+                        window["dt-dispatchEvents"] = [];
+                        scope[funcExpress]();
+                        scope.model = undefined;
+                        scope.view = undefined;
+                    });
+                }
+                else if ((this.htmlComponent instanceof HTMLSelectElement) && this.htmlComponent.dataset
+                    && this.htmlComponent.dataset['dtValue']
+                    && this.htmlComponent.dataset['dtValue'] === this.internalExpression
+                    && this.htmlComponent.dataset['dtChildren']
+                    && this.dirty) {
+                    var childProp = this.htmlComponent.dataset['dtChildren'];
+                    var filterProp = this._parentValue["_" + childProp].selectValueProp;
+                    if (typeof filterProp !== "undefined") {
+                        var selectComp = this.htmlComponent;
+                        if (!selectComp.multiple)
+                            this._objectValue = this._parentValue[childProp].find(function (n) { return n[filterProp] === selectComp.value; });
+                        else {
+                            var lenght = selectComp.children.length;
+                            var arrValue = [];
+                            for (var i = 0; i < lenght; i++) {
+                                if (selectComp.children[i]['selected']) {
+                                    arrValue.push(this._parentValue[childProp].find(function (n) { return n[filterProp] === selectComp.children[i]['value']; }));
+                                }
+                            }
+                            this._objectValue = arrValue;
+                        }
+                    }
+                    this.dirty = false;
+                }
             }
-        }
-        return res;
-    };
-    return ModelView;
-})();
-
-/// <reference path="ObservableItem.ts" />
-/// <reference path="BindableProperty.ts" />
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-var ObservableArray = (function (_super) {
-    __extends(ObservableArray, _super);
-    function ObservableArray(name, binding) {
-        var _self = this;
-        _super.call(this);
-        this._name = name;
-        if (binding)
-            this._binding = binding;
-        else
-            this._binding = null;
-    }
-    Object.defineProperty(ObservableArray.prototype, "name", {
-        get: function () {
-            return this._name;
+            return this._value;
+        },
+        set: function (value) {
+            this._value = value;
+            if (!this.ignore) {
+                this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
+                document.dispatchEvent(this.propertyChange);
+            }
         },
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(ObservableArray.prototype, "propertyChangeEvent", {
+    Object.defineProperty(BindableProperty.prototype, "objectValue", {
+        get: function () {
+            return this._objectValue;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(BindableProperty.prototype, "stringValue", {
+        get: function () {
+            var result = "";
+            if (this.objectValue != null || typeof this.objectValue == "object")
+                result = JSON.stringify(this.originalObject(this.objectValue));
+            else
+                result = this.value.toString();
+            return result;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(BindableProperty.prototype, "internalValue", {
+        set: function (value) {
+            this._value = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(BindableProperty.prototype, "propertyChangeEvent", {
         get: function () {
             return "propertyChange" + this.name;
         },
         enumerable: true,
         configurable: true
     });
-    ObservableArray.prototype.initialize = function (items) {
-        var _this = this;
-        items.forEach(function (n) { return _super.prototype.push.call(_this, n); });
-    };
-    ObservableArray.prototype.push = function () {
-        var _this = this;
-        var items = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            items[_i - 0] = arguments[_i];
-        }
-        var res = 0;
-        items.forEach(function (n) {
-            n["_parentReference"] = _this;
-            res = _super.prototype.push.call(_this, n);
-            if (_this._binding === null) {
-                _this.elementAdded = new CustomEvent(_this.name + "elementAdded", { detail: new ObservableItem(_this.name, n, res) });
-                document.dispatchEvent(_this.elementAdded);
+    Object.defineProperty(BindableProperty.prototype, "ignore", {
+        get: function () {
+            return this._ignore;
+        },
+        set: function (value) {
+            if (this._ignore && !value) {
+                this._ignore = value;
+                this.dispatchChangeEvent();
             }
             else
-                _this._binding.dispatchChangeEvent(null);
-        });
-        return res;
+                this._ignore = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    BindableProperty.prototype.dispatchChangeEvent = function (argName) {
+        if (this.ignore)
+            return;
+        if (this.dispatchEvents.indexOf(this.propertyChangeEvent) !== -1)
+            return;
+        if (argName)
+            this._externalReference = argName;
+        this.dirty = true;
+        this.dispatchEvents.push(this.propertyChangeEvent);
+        this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
+        document.dispatchEvent(this.propertyChange);
     };
-    ObservableArray.prototype.pop = function () {
-        var index = this.length - 1;
-        var res = _super.prototype.pop.call(this);
-        if (this._binding === null) {
-            this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, index) });
-            document.dispatchEvent(this.elementRemoved);
-        }
+    BindableProperty.prototype.originalObject = function (value) {
+        var ori = null;
+        if (Array.isArray(value) || value instanceof ObservableArray)
+            ori = [];
         else
-            this._binding.dispatchChangeEvent(null);
-        return res;
-    };
-    ObservableArray.prototype.unshift = function () {
-        var _this = this;
-        var items = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            items[_i - 0] = arguments[_i];
-        }
-        var res = 0;
-        items.forEach(function (n) {
-            n["_parentReference"] = _this;
-            res = _super.prototype.unshift.call(_this, n);
-            if (_this._binding) {
-                _this.elementAdded = new CustomEvent(_this.name + "elementAdded", { detail: new ObservableItem(_this.name, n, res) });
-                document.dispatchEvent(_this.elementAdded);
+            ori = {};
+        if (value.hasOwnProperty('mutated-accesors')) {
+            var auxAccesors = value['mutated-accesors'];
+            for (var i in auxAccesors) {
+                var mutatedProp = auxAccesors[i];
+                if (mutatedProp.indexOf('#') === -1 && mutatedProp.indexOf('@') === -1) {
+                    var internalVal = null;
+                    if (value[mutatedProp] instanceof BindableProperty)
+                        internalVal = value[mutatedProp].stringValue;
+                    else if (typeof value[mutatedProp] === "object")
+                        internalVal = this.originalObject(value[mutatedProp]);
+                    else
+                        internalVal = value[mutatedProp];
+                    if (Array.isArray(ori))
+                        ori.push(internalVal);
+                    else
+                        ori[mutatedProp] = internalVal;
+                }
             }
-            else
-                _this._binding.dispatchChangeEvent(null);
-        });
-        return res;
-    };
-    ObservableArray.prototype.shift = function () {
-        var res = _super.prototype.shift.call(this);
-        if (this._binding === null) {
-            this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, res, 0) });
-            document.dispatchEvent(this.elementRemoved);
+        }
+        else if (Array.isArray(value) || value instanceof ObservableArray) {
+            for (var j = 0; j < value.length; j++)
+                ori.push(this.originalObject(value[j]));
         }
         else
-            this._binding.dispatchChangeEvent(null);
-        return res;
+            ori = value;
+        return ori;
     };
-    ObservableArray.prototype.change = function (index, value) {
-        var origin = this[index];
-        for (var prop in origin) {
-            if (value[prop])
-                origin[prop] = value[prop];
-        }
-    };
-    return ObservableArray;
-})(Array);
-
-var ObservableItem = (function () {
-    function ObservableItem(name, item, index) {
-        this.name = name;
-        this.item = item;
-        this.index = index;
-    }
-    return ObservableItem;
-})();
-
-/// <reference path="ModelView.ts" />
+    return BindableProperty;
+}());
 var duet = (function () {
     function duet() {
     }
@@ -995,4 +981,5 @@ var duet = (function () {
         return new ModelView(modelName, model);
     };
     return duet;
-})();
+}());
+//# sourceMappingURL=duet.js.map

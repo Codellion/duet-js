@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>TDD Example</title>
+<script src="../../build/duet.js"></script>
+<script type="text/javascript">
+	var tdd = null;
+
+	window.onload = (function(){
+		var selTask = function(){
+					this.model.task = this.description;
+					this.model.selectedTask = this;
+					this.model.isSelectTask = true;
+				};
+
+		var model = {
+			task: null,
+			selectedTask: null,
+			isSelectTask: false,
+			showArchiveTasks: true,
+			tasks: [],		
+			cleanTask: (function(){
+				this.task = "";
+				this.selectedTask = null;
+				this.isSelectTask = false;
+			}),
+			updateTasks: (function () {
+				if(this.isSelectTask)
+					this.selectedTask.description = tdd.model.task;
+				else
+					this.tasks.push({ done: false, description: tdd.model.task, selectTask: selTask });
+
+				this.cleanTask();
+			}),
+			countTasks: (function (isDone, checkArchive){
+				var force = false;
+
+				if(checkArchive)
+					force = this.showArchiveTasks;
+
+				if(force)
+					return this.tasks.filter(function(n){ return n.done === isDone || force}).length;
+				else
+					return this.tasks.filter(function(n){ return n.done === isDone}).length;
+			})
+		};
+
+		tdd = duet.bind("tdd", model);
+	});
+	
+</script>
+</head>
+
+<body>
+	<div>
+		<p>Task description:</p>
+		<input type="text" data-dt="tdd" data-dt-value="task" />
+		<input type="button" data-dt="tdd" data-dt-value="#this.isSelectTask? 'Update': 'Add'" 
+			data-dt-disabled="#!this.task || this.task.length == 0" data-dt-onclick="updateTasks" />
+		<input type="button" value="clean" data-dt="tdd" data-dt-onclick="cleanTask" />
+		<p>
+			<input id="chkArchive" type="checkbox" data-dt="tdd" data-dt-checked="showArchiveTasks" data-dt-onchange="cleanTask" />
+			<label for="chkArchive">Show archived (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(true, false)"></span>)</label>
+		</p>
+		<p>Tasks (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(false, true)"></span>)</p>
+		<ul data-dt="tdd" data-dt-children="#var force = this.showArchiveTasks; this.tasks.filter(n => !n.done || force)">
+			<object id="task-template" type="text/html" data="task_template.html"></object>
+		</ul>
+	</div>
+</body>
+
+</html> 
