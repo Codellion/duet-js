@@ -237,7 +237,7 @@ class BindableProperty {
 
 	dispatchChangeEvent(argName?: string) {
 
-		if(this._lastDispatchTime !== null && Date.now() - this._lastDispatchTime < 500)
+		if(this._lastDispatchTime !== null && Date.now() - this._lastDispatchTime < 100)
 			return;
 
 		this._lastDispatchTime = Date.now();

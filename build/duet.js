@@ -250,12 +250,22 @@ var ModelView = (function () {
                 var expr = binding.internalExpression;
                 if (binding.isFunction)
                     expr = binding.funcDefinition;
-                if (this.containsBindReference(expr, name))
+                if (binding.references.indexOf(name) !== -1)
                     binding.dispatchChangeEvent();
-                else if (this.containsBindReference(expr, '$' + name))
-                    binding.dispatchChangeEvent();
-                else if (this.containsBindReference(expr, name + '_stringify'))
-                    binding.dispatchChangeEvent();
+                else {
+                    if (this.containsBindReference(expr, name)) {
+                        binding.dispatchChangeEvent();
+                        binding.references.push(name);
+                    }
+                    else if (this.containsBindReference(expr, '$' + name)) {
+                        binding.dispatchChangeEvent();
+                        binding.references.push(name);
+                    }
+                    else if (this.containsBindReference(expr, name + '_stringify')) {
+                        binding.dispatchChangeEvent();
+                        binding.references.push(name);
+                    }
+                }
             }
         }
     };
@@ -928,7 +938,7 @@ var BindableProperty = (function () {
         configurable: true
     });
     BindableProperty.prototype.dispatchChangeEvent = function (argName) {
-        if (this._lastDispatchTime !== null && Date.now() - this._lastDispatchTime < 500)
+        if (this._lastDispatchTime !== null && Date.now() - this._lastDispatchTime < 100)
             return;
         this._lastDispatchTime = Date.now();
         if (this.ignore)
