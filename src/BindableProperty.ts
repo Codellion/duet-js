@@ -25,6 +25,7 @@ class BindableProperty {
 	private _funcDefinitionString: string;
 	private _objectValue: any;
 	private _ignore: boolean;
+	private _lastDispatchTime: number;
 
 	propertyChange: CustomEvent;
 
@@ -174,8 +175,7 @@ class BindableProperty {
 	set value(value: any) {
 		this._value = value;
 		if (!this.ignore) {
-			this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
-			document.dispatchEvent(this.propertyChange);
+			this.dispatchChangeEvent();
 		}
 	}
 
@@ -213,6 +213,7 @@ class BindableProperty {
 		this.references = new Array<string>();
 		this.ignore = false;
 		this._funcDefinitionString = null;
+		this._lastDispatchTime = null;
 
 		if (Array.isArray(value) || value instanceof ObservableArray) {
 			if (Array.isArray(value)) {
@@ -235,6 +236,12 @@ class BindableProperty {
 	}
 
 	dispatchChangeEvent(argName?: string) {
+
+		if(this._lastDispatchTime !== null && Date.now() - this._lastDispatchTime < 500)
+			return;
+
+		this._lastDispatchTime = Date.now();
+
 		if (this.ignore)
 			return;
 
@@ -290,4 +297,3 @@ class BindableProperty {
 		return ori;
 	}
 }
-

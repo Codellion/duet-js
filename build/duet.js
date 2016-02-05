@@ -737,6 +737,7 @@ var BindableProperty = (function () {
         this.references = new Array();
         this.ignore = false;
         this._funcDefinitionString = null;
+        this._lastDispatchTime = null;
         if (Array.isArray(value) || value instanceof ObservableArray) {
             if (Array.isArray(value)) {
                 var obsArr = null;
@@ -872,8 +873,7 @@ var BindableProperty = (function () {
         set: function (value) {
             this._value = value;
             if (!this.ignore) {
-                this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
-                document.dispatchEvent(this.propertyChange);
+                this.dispatchChangeEvent();
             }
         },
         enumerable: true,
@@ -928,6 +928,9 @@ var BindableProperty = (function () {
         configurable: true
     });
     BindableProperty.prototype.dispatchChangeEvent = function (argName) {
+        if (this._lastDispatchTime !== null && Date.now() - this._lastDispatchTime < 500)
+            return;
+        this._lastDispatchTime = Date.now();
         if (this.ignore)
             return;
         if (this.dispatchEvents.indexOf(this.propertyChangeEvent) !== -1)
