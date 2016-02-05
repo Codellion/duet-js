@@ -3,6 +3,6 @@
         "target": "es5",
         "module": "amd",
         "sourceMap": true,
-        "out": "../build/duet.js"
+        "outFile": "../build/duet.js"
     }
 }

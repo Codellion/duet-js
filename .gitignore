@@ -1,2 +1,4 @@
 node_modules
 sourceMap.map
+.tscache
+.vscode

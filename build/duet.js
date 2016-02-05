@@ -1,8 +1,3 @@
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
 var ObservableItem = (function () {
     function ObservableItem(name, item, index) {
         this.name = name;
@@ -10,7 +5,12 @@ var ObservableItem = (function () {
         this.index = index;
     }
     return ObservableItem;
-}());
+})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var ObservableArray = (function (_super) {
     __extends(ObservableArray, _super);
     function ObservableArray(name, binding) {
@@ -107,7 +107,7 @@ var ObservableArray = (function (_super) {
         }
     };
     return ObservableArray;
-}(Array));
+})(Array);
 (function () {
     function CustomEvent(event, params) {
         params = params || { bubbles: false, cancelable: false, detail: undefined };
@@ -294,7 +294,7 @@ var ModelView = (function () {
         return res;
     };
     return ModelView;
-}());
+})();
 var ModelProperty = (function () {
     function ModelProperty(modelView, component) {
         var _this = this;
@@ -672,7 +672,7 @@ var ModelProperty = (function () {
         instance.syncDependencies(instance);
     };
     return ModelProperty;
-}());
+})();
 var DynamicCode = (function () {
     function DynamicCode() {
     }
@@ -730,7 +730,7 @@ var DynamicCode = (function () {
         return startIndex;
     };
     return DynamicCode;
-}());
+})();
 var BindableProperty = (function () {
     function BindableProperty(propertyName, internalExpression, value, parentValue, model, element, isIndependent) {
         this.dirty = false;
@@ -986,7 +986,7 @@ var BindableProperty = (function () {
         return ori;
     };
     return BindableProperty;
-}());
+})();
 var duet = (function () {
     function duet() {
     }
@@ -994,5 +994,5 @@ var duet = (function () {
         return new ModelView(modelName, model);
     };
     return duet;
-}());
+})();
 //# sourceMappingURL=duet.js.map
