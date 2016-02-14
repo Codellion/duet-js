@@ -52,8 +52,6 @@ class ModelProperty<T> {
                         if(!propToMap)
                             propToMap = [];
                                                                         
-                                                                       
-                                                                        
                         for(var i = 0; i < mutation.addedNodes.length; i++) {
                             if(mutation.addedNodes[i] instanceof HTMLElement) {
                                 var childNode = <HTMLElement>mutation.addedNodes[i];
@@ -69,11 +67,13 @@ class ModelProperty<T> {
                                 addNodes[i].parentNode.removeChild(addNodes[i]);
                         
                         for(var i = 0; i < mutation.removedNodes.length; i++) {
-                            
+                             if(mutation.removedNodes[i] instanceof HTMLElement) {
+                                var childNode = <HTMLElement>mutation.removedNodes[i];
+                                if(!childNode.dataset["dtBindingGeneration"]){
+                                    //TODO Sincronizar eliminación de nodos
+                                }
+                            }                               
                         }
-                        
-                        //if(this.componentBindings["children"])
-                          //  this.bindings[this.componentBindings["children"]].dispatchChangeEvent();   
                     }
                 } 
                 else {
@@ -465,6 +465,8 @@ class ModelProperty<T> {
                             {
                                 newModel[bindValue] = nodElem[bindName];                      
                             }
+                            
+                            //TODO Hacer metodo recursivo
                         }
                     }
                 }
