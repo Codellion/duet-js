@@ -13,18 +13,6 @@ class ModelProperty<T> {
 
 	componentSync: CustomEvent;
 
-
-	get dispatchEvents(): Array<string> {
-		if (!window["dt-dispatchEvents"])
-			window["dt-dispatchEvents"] = [];
-
-		return <Array<string>>window["dt-dispatchEvents"];
-	}
-
-	set dispatchEvents(value: Array<string>) {
-		window["dt-dispatchEvents"] = value;
-	}
-
 	get bindings(): IDictionary<BindableProperty> {
 		return this._modelView.bindings;
 	}
@@ -50,16 +38,58 @@ class ModelProperty<T> {
 		this._component = value;
 
 		var observer = new MutationObserver((mutations) => {
-			mutations.forEach((mutation) => this.syncComponentChange(mutation.target, mutation.attributeName));
+			mutations.forEach((mutation) => {
+                if(mutation.type === "childList"){
+                    var childrenMap:string = this._component.dataset["childrenmap"];
+            
+                    if(this.modelView.isInitialization)
+                        return;
+                               
+                    if(childrenMap && this._template){
+                        var propToMap = this.modelView.model[childrenMap];
+                        var addNodes = new Array<Node>();
+                        
+                        if(!propToMap)
+                            propToMap = [];
+                                                                        
+                                                                       
+                                                                        
+                        for(var i = 0; i < mutation.addedNodes.length; i++) {
+                            if(mutation.addedNodes[i] instanceof HTMLElement) {
+                                var childNode = <HTMLElement>mutation.addedNodes[i];
+                                if(!childNode.dataset["dtBindingGeneration"]){
+                                    this.addChildrenListNode(propToMap, childNode);    
+                                    addNodes.push(mutation.addedNodes[i]);    
+                                }
+                            }
+                        }
+                        
+                        for(var i = 0; i < addNodes.length; i++)
+                            if(addNodes[i].parentNode != null)
+                                addNodes[i].parentNode.removeChild(addNodes[i]);
+                        
+                        for(var i = 0; i < mutation.removedNodes.length; i++) {
+                            
+                        }
+                        
+                        //if(this.componentBindings["children"])
+                          //  this.bindings[this.componentBindings["children"]].dispatchChangeEvent();   
+                    }
+                } 
+                else {
+                    this.syncComponentChange(mutation.target, mutation.attributeName)}
+                }
+            );
+                
 			this.syncDependencies(instance);
 		});
 
-		var config = { attributes: true, childList: false, characterData: true };
+		var config = { attributes: true, childList: true, characterData: true };
 		observer.observe(this._component, config);
 
-		this._component.addEventListener("change", () => { ModelProperty.syncComponentEvent(instance); }, false);
-		this._component.addEventListener("keydown", () => { ModelProperty.syncComponentEvent(instance); }), false;
-		this._component.addEventListener("keyup", () => { ModelProperty.syncComponentEvent(instance); }, false);
+		this._component.addEventListener("change", () => ModelProperty.syncComponentEvent(instance), false);
+		this._component.addEventListener("keydown", () => ModelProperty.syncComponentEvent(instance), false);
+		this._component.addEventListener("keyup", () => ModelProperty.syncComponentEvent(instance), false);
 	}
 
 	constructor(modelView: ModelView<T>, component: HTMLElement) {
@@ -87,7 +117,7 @@ class ModelProperty<T> {
 				}
 			}
 
-			if (this.component[bindName] != undefined && this.component[bindName].length > 0
+			if (typeof this.component[bindName] !== "undefined" && this.component[bindName] != null && this.component[bindName].length > 0
 				&& this.component[bindName][0] instanceof HTMLElement) {
 				var node = this.component[bindName][0];
 
@@ -219,9 +249,9 @@ class ModelProperty<T> {
 		}
 	}
 
-	private bindingObservableItem(propName: string, index: number, item: any, bindName: string) {
-		if (!this.bindings[propName] || this._template == undefined)
-			return
+ private bindingObservableItem(propName: string, index: number, item: any, bindName: string) {
+    if (!this.bindings[propName] || this._template == undefined)
+        return
 
 		var newModelName = this.modelView.modelName + "|" + propName + "|" + index;
 
@@ -242,7 +272,7 @@ class ModelProperty<T> {
 		}
 
 		if (this._component instanceof HTMLSelectElement && this._template.dataset
-			&& (this._template.dataset['dtValue'] || this._template.dataset['dtText'])) {
+        && (this._template.dataset['dtValue'] || this._template.dataset['dtText'])) {
 			if (this._template.dataset['dtValue'])
 				this.bindings[propName].selectValueProp = this._template.dataset['dtValue'];
 			else
@@ -251,6 +281,9 @@ class ModelProperty<T> {
 		}
 
 		var element = this._template.cloneNode(true);
+        if(element instanceof HTMLElement)
+            element.dataset["dtBindingGeneration"] = "true";
+            
 		this.component.appendChild(element);
 
 		var newModel = new ModelView(newModelName, item, <HTMLElement>element, bindName, this.modelView.originalModel);
@@ -365,7 +398,7 @@ class ModelProperty<T> {
 
 		binding.htmlComponent = internalComponent;
 
-		if (typeof (internalComponent[prop]) != undefined) {
+		if (typeof (internalComponent[prop]) !== "undefined") {
 			if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
 				if (binding.dirty) {
 					for (var j = internalComponent[prop].length - 1; j > -1; j--) {
@@ -401,6 +434,45 @@ class ModelProperty<T> {
 			}
 		}
 	}
+    
+    addChildrenListNode(childList: Array<any>, childNode: HTMLElement): void {
+        var nodeElements: NodeListOf<Element> = childNode.querySelectorAll('*');
+        var templateElements: NodeListOf<Element> = this._template.querySelectorAll('*');
+        var newModel = {};
+     
+        for(var i=0; i < templateElements.length; i++) {
+            var _tplElem = templateElements[i];
+            
+            if(nodeElements.length < i)
+                break;
+            
+            var _nodElem = nodeElements[i];
+            
+            if(_tplElem instanceof HTMLElement && _nodElem instanceof HTMLElement ) {
+                var tplElem = <HTMLElement> _tplElem;
+                var nodElem = <HTMLElement> _nodElem;
+
+                for (var name in tplElem.dataset) {
+                    if (tplElem.dataset.hasOwnProperty(name) && (<string>name).indexOf("dt") == 0) {
+                        if (name.length > 2) {
+                            var bindName = name[2].toLowerCase() + name.slice(3);
+                            var bindValue = tplElem.dataset[name].trim();
+
+                            bindName = bindName.replace("html", "HTML");
+
+                            if (bindValue.indexOf('#') === -1 && bindValue.indexOf('@') === -1 
+                                && nodElem[bindName])
+                            {
+                                newModel[bindValue] = nodElem[bindName];                      
+                            }
+                        }
+                    }
+                }
+            }
+        }     
+        
+        childList.push(newModel);
+    }
 
 	static createAccesorProperty(propertyName: string, source: Object, property: BindableProperty): void {
 		if (Array.isArray(source) || source instanceof ObservableArray)
@@ -447,9 +519,8 @@ class ModelProperty<T> {
 	}
 
 	static syncComponentEvent(instance: ModelProperty<any>): void {
-		instance.dispatchEvents = [];
 		for (var compBind in instance.componentBindings) {
-			if (typeof (instance.component[compBind]) != undefined
+			if (typeof (instance.component[compBind]) !== "undefined"
 				&& instance.component[compBind].__proto__ !== HTMLCollection.prototype) {
 				if (instance.component['multiple']) {
 					var lenght = instance.component.children.length;

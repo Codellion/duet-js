@@ -40,13 +40,6 @@ class BindableProperty {
 		return this._internalExpression;
 	}
 
-	get dispatchEvents(): Array<string> {
-		if (!window["dt-dispatchEvents"])
-			window["dt-dispatchEvents"] = [];
-
-		return <Array<string>>window["dt-dispatchEvents"];
-	}
-
 	get value(): any {
 		var propName = this.name;
 
@@ -64,8 +57,6 @@ class BindableProperty {
 				this._eventExpresion = func;
 				var self = this;
 				result = (function() {
-					window["dt-dispatchEvents"] = [];
-
 					var scope = self._parentValue;
 					scope.model = self.model;
 					scope.view = this;
@@ -118,7 +109,6 @@ class BindableProperty {
 				this._value = (function() {
 					scope.model = model;
 					scope.view = this;
-					window["dt-dispatchEvents"] = [];
 					scope[funcExpress]();
 					scope.model = undefined;
 					scope.view = undefined;
@@ -245,14 +235,12 @@ class BindableProperty {
 		if (this.ignore)
 			return;
 
-		if (this.dispatchEvents.indexOf(this.propertyChangeEvent) !== -1)
-			return;
-
 		if (argName)
 			this._externalReference = argName;
+        else
+            this._externalReference = null;
 
 		this.dirty = true;
-		this.dispatchEvents.push(this.propertyChangeEvent);
 		this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
 		document.dispatchEvent(this.propertyChange);
 	}

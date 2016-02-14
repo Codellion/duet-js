@@ -80,7 +80,7 @@ var ObservableArray = (function (_super) {
         items.forEach(function (n) {
             n["_parentReference"] = _this;
             res = _super.prototype.unshift.call(_this, n);
-            if (_this._binding) {
+            if (_this._binding === null) {
                 _this.elementAdded = new CustomEvent(_this.name + "elementAdded", { detail: new ObservableItem(_this.name, n, res) });
                 document.dispatchEvent(_this.elementAdded);
             }
@@ -175,15 +175,6 @@ var ModelView = (function () {
         }
         this.isInitialization = false;
     }
-    Object.defineProperty(ModelView.prototype, "dispatchEvents", {
-        get: function () {
-            if (!window["dt-dispatchEvents"])
-                window["dt-dispatchEvents"] = [];
-            return window["dt-dispatchEvents"];
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(ModelView.prototype, "bindings", {
         get: function () {
             return window[this.modelName + "_dt-bindings"];
@@ -230,7 +221,6 @@ var ModelView = (function () {
                     if (!_this.isInitialization) {
                         _this.checkBindDependencies(args);
                         if (obj["_parentReference"] && obj["_parentReference"]._binding) {
-                            _this.dispatchEvents.push(args.detail.propertyChangeEvent);
                             obj["_parentReference"]._binding.dispatchChangeEvent(args.detail.internalExpression);
                         }
                     }
@@ -316,7 +306,7 @@ var ModelProperty = (function () {
                     binding = true;
                 }
             }
-            if (this.component[bindName] != undefined && this.component[bindName].length > 0
+            if (typeof this.component[bindName] !== "undefined" && this.component[bindName] != null && this.component[bindName].length > 0
                 && this.component[bindName][0] instanceof HTMLElement) {
                 var node = this.component[bindName][0];
                 if (typeof node === "function") {
@@ -365,18 +355,6 @@ var ModelProperty = (function () {
         }
         this.componentSync = new CustomEvent("componentSync", { detail: this });
     }
-    Object.defineProperty(ModelProperty.prototype, "dispatchEvents", {
-        get: function () {
-            if (!window["dt-dispatchEvents"])
-                window["dt-dispatchEvents"] = [];
-            return window["dt-dispatchEvents"];
-        },
-        set: function (value) {
-            window["dt-dispatchEvents"] = value;
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(ModelProperty.prototype, "bindings", {
         get: function () {
             return this._modelView.bindings;
@@ -406,14 +384,43 @@ var ModelProperty = (function () {
             var instance = this;
             this._component = value;
             var observer = new MutationObserver(function (mutations) {
-                mutations.forEach(function (mutation) { return _this.syncComponentChange(mutation.target, mutation.attributeName); });
+                mutations.forEach(function (mutation) {
+                    if (mutation.type === "childList") {
+                        var childrenMap = _this._component.dataset["childrenmap"];
+                        if (_this.modelView.isInitialization)
+                            return;
+                        if (childrenMap && _this._template) {
+                            var propToMap = _this.modelView.model[childrenMap];
+                            var addNodes = new Array();
+                            if (!propToMap)
+                                propToMap = [];
+                            for (var i = 0; i < mutation.addedNodes.length; i++) {
+                                if (mutation.addedNodes[i] instanceof HTMLElement) {
+                                    var childNode = mutation.addedNodes[i];
+                                    if (!childNode.dataset["dtBindingGeneration"]) {
+                                        _this.addChildrenListNode(propToMap, childNode);
+                                        addNodes.push(mutation.addedNodes[i]);
+                                    }
+                                }
+                            }
+                            for (var i = 0; i < addNodes.length; i++)
+                                if (addNodes[i].parentNode != null)
+                                    addNodes[i].parentNode.removeChild(addNodes[i]);
+                            for (var i = 0; i < mutation.removedNodes.length; i++) {
+                            }
+                        }
+                    }
+                    else {
+                        _this.syncComponentChange(mutation.target, mutation.attributeName);
+                    }
+                });
                 _this.syncDependencies(instance);
             });
-            var config = { attributes: true, childList: false, characterData: true };
+            var config = { attributes: true, childList: true, characterData: true };
             observer.observe(this._component, config);
-            this._component.addEventListener("change", function () { ModelProperty.syncComponentEvent(instance); }, false);
-            this._component.addEventListener("keydown", function () { ModelProperty.syncComponentEvent(instance); }), false;
-            this._component.addEventListener("keyup", function () { ModelProperty.syncComponentEvent(instance); }, false);
+            this._component.addEventListener("change", function () { return ModelProperty.syncComponentEvent(instance); }, false);
+            this._component.addEventListener("keydown", function () { return ModelProperty.syncComponentEvent(instance); }, false);
+            this._component.addEventListener("keyup", function () { return ModelProperty.syncComponentEvent(instance); }, false);
         },
         enumerable: true,
         configurable: true
@@ -492,6 +499,8 @@ var ModelProperty = (function () {
                 this.bindings[propName].selectValueProp = this._template.dataset['dtText'];
         }
         var element = this._template.cloneNode(true);
+        if (element instanceof HTMLElement)
+            element.dataset["dtBindingGeneration"] = "true";
         this.component.appendChild(element);
         var newModel = new ModelView(newModelName, item, element, bindName, this.modelView.originalModel);
         this.modelView.subModels.push(newModel);
@@ -581,7 +590,7 @@ var ModelProperty = (function () {
             });
         }
         binding.htmlComponent = internalComponent;
-        if (typeof (internalComponent[prop]) != undefined) {
+        if (typeof (internalComponent[prop]) !== "undefined") {
             if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
                 if (binding.dirty) {
                     for (var j = internalComponent[prop].length - 1; j > -1; j--) {
@@ -614,6 +623,35 @@ var ModelProperty = (function () {
                 }
             }
         }
+    };
+    ModelProperty.prototype.addChildrenListNode = function (childList, childNode) {
+        var nodeElements = childNode.querySelectorAll('*');
+        var templateElements = this._template.querySelectorAll('*');
+        var newModel = {};
+        for (var i = 0; i < templateElements.length; i++) {
+            var _tplElem = templateElements[i];
+            if (nodeElements.length < i)
+                break;
+            var _nodElem = nodeElements[i];
+            if (_tplElem instanceof HTMLElement && _nodElem instanceof HTMLElement) {
+                var tplElem = _tplElem;
+                var nodElem = _nodElem;
+                for (var name in tplElem.dataset) {
+                    if (tplElem.dataset.hasOwnProperty(name) && name.indexOf("dt") == 0) {
+                        if (name.length > 2) {
+                            var bindName = name[2].toLowerCase() + name.slice(3);
+                            var bindValue = tplElem.dataset[name].trim();
+                            bindName = bindName.replace("html", "HTML");
+                            if (bindValue.indexOf('#') === -1 && bindValue.indexOf('@') === -1
+                                && nodElem[bindName]) {
+                                newModel[bindValue] = nodElem[bindName];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        childList.push(newModel);
     };
     ModelProperty.createAccesorProperty = function (propertyName, source, property) {
         if (Array.isArray(source) || source instanceof ObservableArray)
@@ -651,9 +689,8 @@ var ModelProperty = (function () {
         source['mutated-accesors'].push(propertyName);
     };
     ModelProperty.syncComponentEvent = function (instance) {
-        instance.dispatchEvents = [];
         for (var compBind in instance.componentBindings) {
-            if (typeof (instance.component[compBind]) != undefined
+            if (typeof (instance.component[compBind]) !== "undefined"
                 && instance.component[compBind].__proto__ !== HTMLCollection.prototype) {
                 if (instance.component['multiple']) {
                     var lenght = instance.component.children.length;
@@ -782,15 +819,6 @@ var BindableProperty = (function () {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(BindableProperty.prototype, "dispatchEvents", {
-        get: function () {
-            if (!window["dt-dispatchEvents"])
-                window["dt-dispatchEvents"] = [];
-            return window["dt-dispatchEvents"];
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(BindableProperty.prototype, "value", {
         get: function () {
             var propName = this.name;
@@ -806,7 +834,6 @@ var BindableProperty = (function () {
                     this._eventExpresion = func;
                     var self = this;
                     result = (function () {
-                        window["dt-dispatchEvents"] = [];
                         var scope = self._parentValue;
                         scope.model = self.model;
                         scope.view = this;
@@ -847,7 +874,6 @@ var BindableProperty = (function () {
                     this._value = (function () {
                         scope.model = model;
                         scope.view = this;
-                        window["dt-dispatchEvents"] = [];
                         scope[funcExpress]();
                         scope.model = undefined;
                         scope.view = undefined;
@@ -943,12 +969,11 @@ var BindableProperty = (function () {
         this._lastDispatchTime = Date.now();
         if (this.ignore)
             return;
-        if (this.dispatchEvents.indexOf(this.propertyChangeEvent) !== -1)
-            return;
         if (argName)
             this._externalReference = argName;
+        else
+            this._externalReference = null;
         this.dirty = true;
-        this.dispatchEvents.push(this.propertyChangeEvent);
         this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
         document.dispatchEvent(this.propertyChange);
     };

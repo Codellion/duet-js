@@ -64,7 +64,7 @@ class ObservableArray<T> extends Array<T> {
 		items.forEach((n) => {
 			n["_parentReference"] = this;
 			res = super.unshift(n);
-			if (this._binding) {
+			if (this._binding === null) {
 				this.elementAdded = new CustomEvent(this.name + "elementAdded", { detail: new ObservableItem(this.name, n, res) });
 				document.dispatchEvent(this.elementAdded);
 			}

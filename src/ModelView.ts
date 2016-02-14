@@ -24,13 +24,6 @@ class ModelView<T> {
 
 	private _modelName: string;
 
-	get dispatchEvents(): Array<string> {
-		if (!window["dt-dispatchEvents"])
-			window["dt-dispatchEvents"] = [];
-
-		return <Array<string>>window["dt-dispatchEvents"];
-	}
-
 	get bindings(): IDictionary<BindableProperty> {
 		return <IDictionary<BindableProperty>>window[this.modelName + "_dt-bindings"];
 	}
@@ -154,7 +147,6 @@ class ModelView<T> {
 							this.checkBindDependencies(args);
 
 							if (obj["_parentReference"] && obj["_parentReference"]._binding) {
-								this.dispatchEvents.push(args.detail.propertyChangeEvent);
 								obj["_parentReference"]._binding.dispatchChangeEvent(args.detail.internalExpression);
 							}
 						}

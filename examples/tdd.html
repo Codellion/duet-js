@@ -7,13 +7,14 @@
 <script type="text/javascript">
 	var tdd = null;
 
-	window.onload = (function(){
-		var selTask = function(){
-					this.model.task = this.description;
-					this.model.selectedTask = this;
-					this.model.isSelectTask = true;
-				};
+    function selectTask(scope){
+        scope.model.task = scope.description;
+        scope.model.selectedTask = scope;
+        scope.model.isSelectTask = true;
+    }
 
+	window.onload = (function(){
+	
 		var model = {
 			task: null,
 			selectedTask: null,
@@ -29,7 +30,7 @@
 				if(this.isSelectTask)
 					this.selectedTask.description = tdd.model.task;
 				else
-					this.tasks.push({ done: false, description: tdd.model.task, selectTask: selTask });
+					this.tasks.push({ done: false, description: tdd.model.task });
 
 				this.cleanTask();
 			}),
@@ -64,11 +65,11 @@
 			<label for="chkArchive">Show archived (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(true, false)"></span>)</label>
 		</p>
 		<p>Tasks (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(false, true)"></span>)</p>
-		<ul data-dt="tdd" data-dt-children="#var force = this.showArchiveTasks; this.tasks.filter(n => !n.done || force)">
+		<ul data-dt="tdd" data-childrenMap="tasks" data-dt-children="#var force = this.showArchiveTasks; this.tasks.filter(n => !n.done || force)">
 			<il>
 				<input type="checkbox" data-dt="children" data-dt-checked="done" />				
 				<span data-dt="children" data-dt-innerHTML="description" data-dt-style.text-decoration="#this.done? 'line-through': ''"
-					 data-dt-onclick="selectTask"  onmouseover="" style="cursor: pointer;"></span>
+					 data-dt-onclick="@selectTask(this)"  onmouseover="" style="cursor: pointer;"></span>
 				<br />
 			</il>
 		</ul>
