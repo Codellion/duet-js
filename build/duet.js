@@ -398,7 +398,7 @@ var ModelProperty = (function () {
                                 if (mutation.addedNodes[i] instanceof HTMLElement) {
                                     var childNode = mutation.addedNodes[i];
                                     if (!childNode.dataset["dtBindingGeneration"]) {
-                                        _this.addChildrenListNode(propToMap, childNode);
+                                        _this.addChildrenListNode(propToMap, childNode, _this._template);
                                         addNodes.push(mutation.addedNodes[i]);
                                     }
                                 }
@@ -407,6 +407,11 @@ var ModelProperty = (function () {
                                 if (addNodes[i].parentNode != null)
                                     addNodes[i].parentNode.removeChild(addNodes[i]);
                             for (var i = 0; i < mutation.removedNodes.length; i++) {
+                                if (mutation.removedNodes[i] instanceof HTMLElement) {
+                                    var childNode = mutation.removedNodes[i];
+                                    if (!childNode.dataset["dtBindingGeneration"]) {
+                                    }
+                                }
                             }
                         }
                     }
@@ -624,34 +629,62 @@ var ModelProperty = (function () {
             }
         }
     };
-    ModelProperty.prototype.addChildrenListNode = function (childList, childNode) {
-        var nodeElements = childNode.querySelectorAll('*');
-        var templateElements = this._template.querySelectorAll('*');
+    ModelProperty.prototype.addChildrenListNode = function (childList, childNode, template) {
+        var templateDtElements = new Array();
+        var totalDocElements = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children']"));
+        var exclude = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'] [data-dt='children']"));
+        if (totalDocElements.length !== exclude.length) {
+            for (var k = 0; k < totalDocElements.length; k++)
+                if (exclude.indexOf(totalDocElements[k]) === -1)
+                    templateDtElements.push(totalDocElements[k]);
+        }
+        else
+            templateDtElements = totalDocElements;
+        var nodeElements = childNode.querySelectorAll("*");
+        var templateElements = template.querySelectorAll('*');
         var newModel = {};
+        this.mapTemplateNode(newModel, template, childNode);
         for (var i = 0; i < templateElements.length; i++) {
-            var _tplElem = templateElements[i];
             if (nodeElements.length < i)
                 break;
-            var _nodElem = nodeElements[i];
-            if (_tplElem instanceof HTMLElement && _nodElem instanceof HTMLElement) {
-                var tplElem = _tplElem;
-                var nodElem = _nodElem;
-                for (var name in tplElem.dataset) {
-                    if (tplElem.dataset.hasOwnProperty(name) && name.indexOf("dt") == 0) {
-                        if (name.length > 2) {
-                            var bindName = name[2].toLowerCase() + name.slice(3);
-                            var bindValue = tplElem.dataset[name].trim();
-                            bindName = bindName.replace("html", "HTML");
-                            if (bindValue.indexOf('#') === -1 && bindValue.indexOf('@') === -1
-                                && nodElem[bindName]) {
-                                newModel[bindValue] = nodElem[bindName];
-                            }
-                        }
-                    }
+            var _tplElem = templateElements[i];
+            if (templateDtElements.indexOf(_tplElem) !== -1) {
+                var _nodElem = nodeElements[i];
+                if (_tplElem instanceof HTMLElement && _nodElem instanceof HTMLElement) {
+                    var tplElem = _tplElem;
+                    var nodElem = _nodElem;
+                    this.mapTemplateNode(newModel, tplElem, nodElem);
                 }
             }
         }
         childList.push(newModel);
+    };
+    ModelProperty.prototype.mapTemplateNode = function (newModel, tplElem, nodElem) {
+        for (var name in tplElem.dataset) {
+            if (tplElem.dataset.hasOwnProperty(name) && name.indexOf("dt") == 0) {
+                if (name.length > 2) {
+                    var bindName = name[2].toLowerCase() + name.slice(3);
+                    var bindValue = tplElem.dataset[name].trim();
+                    bindName = bindName.replace("html", "HTML");
+                    if (bindName === "children" && nodElem[bindName]) {
+                        var childrenMap = tplElem.dataset["childrenmap"];
+                        if (!newModel[childrenMap]) {
+                            newModel[childrenMap] = [];
+                            for (var i = 0; i < nodElem[bindName].length; i++) {
+                                var j = 0;
+                                if (tplElem[bindName].length === nodElem[bindName].length)
+                                    j = i;
+                                this.addChildrenListNode(newModel[childrenMap], nodElem[bindName][i], tplElem[bindName][j]);
+                            }
+                        }
+                    }
+                    else if (bindValue.indexOf('#') === -1 && bindValue.indexOf('@') === -1
+                        && nodElem[bindName]) {
+                        newModel[bindValue] = nodElem[bindName];
+                    }
+                }
+            }
+        }
     };
     ModelProperty.createAccesorProperty = function (propertyName, source, property) {
         if (Array.isArray(source) || source instanceof ObservableArray)
@@ -831,7 +864,8 @@ var BindableProperty = (function () {
                         func = DynamicCode.parseLambdaExpression(func);
                 }
                 if (this._internalExpression.indexOf('@') == 0) {
-                    this._eventExpresion = func;
+                    if (this._eventExpresion == null)
+                        this._eventExpresion = func;
                     var self = this;
                     result = (function () {
                         var scope = self._parentValue;

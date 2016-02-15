@@ -54,7 +54,9 @@ class BindableProperty {
 			}
 
 			if (this._internalExpression.indexOf('@') == 0) {
-				this._eventExpresion = func;
+                if(this._eventExpresion == null)
+				    this._eventExpresion = func;
+                    
 				var self = this;
 				result = (function() {
 					var scope = self._parentValue;

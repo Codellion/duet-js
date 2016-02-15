@@ -28,9 +28,9 @@
 			}),
 			updateTasks: (function () {
 				if(this.isSelectTask)
-					this.selectedTask.description = tdd.model.task;
+					this.selectedTask.description = this.model.task;
 				else
-					this.tasks.push({ done: false, description: tdd.model.task });
+					this.tasks.push({ done: false, description: this.model.task, subTasks: [] });
 
 				this.cleanTask();
 			}),
@@ -71,6 +71,14 @@
 				<span data-dt="children" data-dt-innerHTML="description" data-dt-style.text-decoration="#this.done? 'line-through': ''"
 					 data-dt-onclick="@selectTask(this)"  onmouseover="" style="cursor: pointer;"></span>
 				<br />
+                <ul data-dt="children" data-childrenMap="subTasks" data-dt-children="subTasks">
+                    <il>
+                        <input type="checkbox" data-dt="children" data-dt-checked="done" />				
+                        <span data-dt="children" data-dt-innerHTML="description" data-dt-style.text-decoration="#this.done? 'line-through': ''"
+                            onmouseover="" style="cursor: pointer;"></span>
+                        <br />
+                    </il>
+                </ul>
 			</il>
 		</ul>
 	</div>

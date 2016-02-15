@@ -56,7 +56,7 @@ class ModelProperty<T> {
                             if(mutation.addedNodes[i] instanceof HTMLElement) {
                                 var childNode = <HTMLElement>mutation.addedNodes[i];
                                 if(!childNode.dataset["dtBindingGeneration"]){
-                                    this.addChildrenListNode(propToMap, childNode);    
+                                    this.addChildrenListNode(propToMap, childNode, this._template);    
                                     addNodes.push(mutation.addedNodes[i]);    
                                 }
                             }
@@ -435,45 +435,83 @@ class ModelProperty<T> {
 		}
 	}
     
-    addChildrenListNode(childList: Array<any>, childNode: HTMLElement): void {
-        var nodeElements: NodeListOf<Element> = childNode.querySelectorAll('*');
-        var templateElements: NodeListOf<Element> = this._template.querySelectorAll('*');
+    addChildrenListNode(childList: Array<any>, childNode: HTMLElement, template: HTMLElement): void {
+        var templateDtElements = new Array<Element>();
+        
+        var totalDocElements = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children']"));
+        var exclude = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'] [data-dt='children']"));
+
+        if (totalDocElements.length !== exclude.length) {
+            for (var k = 0; k < totalDocElements.length; k++)
+                if (exclude.indexOf(totalDocElements[k]) === -1)
+                    templateDtElements.push(totalDocElements[k]);
+
+        }
+        else
+            templateDtElements = totalDocElements;
+        
+        
+        var nodeElements: NodeListOf<Element> = childNode.querySelectorAll("*");
+        var templateElements: NodeListOf<Element> = template.querySelectorAll('*');
         var newModel = {};
+        
+        this.mapTemplateNode(newModel, template, childNode);
      
         for(var i=0; i < templateElements.length; i++) {
-            var _tplElem = templateElements[i];
             
             if(nodeElements.length < i)
                 break;
             
-            var _nodElem = nodeElements[i];
+            var _tplElem = templateElements[i];
             
-            if(_tplElem instanceof HTMLElement && _nodElem instanceof HTMLElement ) {
-                var tplElem = <HTMLElement> _tplElem;
-                var nodElem = <HTMLElement> _nodElem;
+            if(templateDtElements.indexOf(_tplElem) !== -1)
+            {
+                var _nodElem = nodeElements[i];
+            
+                if(_tplElem instanceof HTMLElement && _nodElem instanceof HTMLElement ) {
+                    var tplElem = <HTMLElement> _tplElem;
+                    var nodElem = <HTMLElement> _nodElem;
 
-                for (var name in tplElem.dataset) {
-                    if (tplElem.dataset.hasOwnProperty(name) && (<string>name).indexOf("dt") == 0) {
-                        if (name.length > 2) {
-                            var bindName = name[2].toLowerCase() + name.slice(3);
-                            var bindValue = tplElem.dataset[name].trim();
-
-                            bindName = bindName.replace("html", "HTML");
-
-                            if (bindValue.indexOf('#') === -1 && bindValue.indexOf('@') === -1 
-                                && nodElem[bindName])
-                            {
-                                newModel[bindValue] = nodElem[bindName];                      
-                            }
-                            
-                            //TODO Hacer metodo recursivo
-                        }
-                    }
+                    this.mapTemplateNode(newModel, tplElem, nodElem);
                 }
             }
         }     
         
         childList.push(newModel);
+    }
+    
+    private mapTemplateNode(newModel: any, tplElem: HTMLElement, nodElem: HTMLElement): void {
+        for (var name in tplElem.dataset) {
+            if (tplElem.dataset.hasOwnProperty(name) && (<string>name).indexOf("dt") == 0) {
+                if (name.length > 2) {
+                    var bindName = name[2].toLowerCase() + name.slice(3);
+                    var bindValue = tplElem.dataset[name].trim();
+
+                    bindName = bindName.replace("html", "HTML");
+
+                    if(bindName === "children" && nodElem[bindName]) {
+                        var childrenMap:string = tplElem.dataset["childrenmap"]
+                        
+                        if(!newModel[childrenMap]){
+                            newModel[childrenMap] = [];
+                            for(var i = 0; i < nodElem[bindName].length; i++){
+                                var j = 0;
+                                
+                                if(tplElem[bindName].length === nodElem[bindName].length)
+                                    j = i;
+                                
+                                this.addChildrenListNode(newModel[childrenMap], nodElem[bindName][i], tplElem[bindName][j]);                            
+                            }                            
+                        }
+                    }
+                    else  if (bindValue.indexOf('#') === -1 && bindValue.indexOf('@') === -1 
+                        && nodElem[bindName])
+                    {
+                        newModel[bindValue] = nodElem[bindName];                      
+                    }
+                }
+            }
+        }
     }
 
 	static createAccesorProperty(propertyName: string, source: Object, property: BindableProperty): void {
