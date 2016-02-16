@@ -99,6 +99,23 @@ var ObservableArray = (function (_super) {
             this._binding.dispatchChangeEvent(null);
         return res;
     };
+    ObservableArray.prototype.splice = function (start, deleteCount) {
+        var _this = this;
+        var items = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            items[_i - 2] = arguments[_i];
+        }
+        var res = Array.prototype.splice.call(this, [start, deleteCount, items]);
+        res.forEach(function (n) {
+            if (_this._binding === null) {
+                _this.elementRemoved = new CustomEvent(_this.name + "elementRemoved", { detail: new ObservableItem(_this.name, n, 0) });
+                document.dispatchEvent(_this.elementRemoved);
+            }
+            else
+                _this._binding.dispatchChangeEvent(null);
+        });
+        return res;
+    };
     ObservableArray.prototype.change = function (index, value) {
         var origin = this[index];
         for (var prop in origin) {
@@ -409,7 +426,8 @@ var ModelProperty = (function () {
                             for (var i = 0; i < mutation.removedNodes.length; i++) {
                                 if (mutation.removedNodes[i] instanceof HTMLElement) {
                                     var childNode = mutation.removedNodes[i];
-                                    if (!childNode.dataset["dtBindingGeneration"]) {
+                                    if (childNode.dataset["dtBindingGeneration"]) {
+                                        propToMap.splice(childNode.dataset["dtBindingGeneration"], 1);
                                     }
                                 }
                             }
@@ -505,7 +523,7 @@ var ModelProperty = (function () {
         }
         var element = this._template.cloneNode(true);
         if (element instanceof HTMLElement)
-            element.dataset["dtBindingGeneration"] = "true";
+            element.dataset["dtBindingGeneration"] = index.toString();
         this.component.appendChild(element);
         var newModel = new ModelView(newModelName, item, element, bindName, this.modelView.originalModel);
         this.modelView.subModels.push(newModel);

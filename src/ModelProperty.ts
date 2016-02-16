@@ -69,8 +69,8 @@ class ModelProperty<T> {
                         for(var i = 0; i < mutation.removedNodes.length; i++) {
                              if(mutation.removedNodes[i] instanceof HTMLElement) {
                                 var childNode = <HTMLElement>mutation.removedNodes[i];
-                                if(!childNode.dataset["dtBindingGeneration"]){
-                                    //TODO Sincronizar eliminación de nodos
+                                if(childNode.dataset["dtBindingGeneration"]){
+                                    propToMap.splice(childNode.dataset["dtBindingGeneration"], 1);
                                 }
                             }                               
                         }
@@ -282,7 +282,7 @@ class ModelProperty<T> {
 
 		var element = this._template.cloneNode(true);
         if(element instanceof HTMLElement)
-            element.dataset["dtBindingGeneration"] = "true";
+            element.dataset["dtBindingGeneration"] = index.toString();
             
 		this.component.appendChild(element);
 

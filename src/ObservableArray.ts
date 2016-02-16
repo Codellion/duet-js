@@ -86,6 +86,21 @@ class ObservableArray<T> extends Array<T> {
 		return res;
 	}
 
+    splice(start: number, deleteCount?: number, ...items: T[]): T[] {
+        var res = Array.prototype.splice.call(this, [start, deleteCount, items]);
+        
+        res.forEach((n) => {
+            if (this._binding === null) {
+                this.elementRemoved = new CustomEvent(this.name + "elementRemoved", { detail: new ObservableItem(this.name, n, 0) });
+                document.dispatchEvent(this.elementRemoved);
+            }
+            else
+                this._binding.dispatchChangeEvent(null);
+        });              
+       
+        return res;
+    }
+
 	change(index: number, value: T): void {
 		var origin = this[index];
 
