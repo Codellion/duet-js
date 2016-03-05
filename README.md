@@ -1,4 +1,8 @@
-## Qué es? ##
+<p align="center">
+  <img src="https://raw.githubusercontent.com/codellion/duet-js/master/logo.PNG" width="300">
+</p>
+
+## Descripción ##
 Duet-js es una librería javascript que permite incluir atributos dinámicos en las etiquetas HTML, además permite enlazar dichas etiquetas a valores y cálculos en tiempo real permitiendo un diseño MVVM en la capa de presentación.
 
 
