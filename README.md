@@ -1,8 +1,7 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/codellion/duet-js/master/logo.PNG" width="300">
 </p>
-
-## Descripción ##
+## Descripción
 Duet-js es una librería javascript que permite incluir atributos dinámicos en las etiquetas HTML, además permite enlazar dichas etiquetas a valores y cálculos en tiempo real permitiendo un diseño MVVM en la capa de presentación.
 
 
@@ -67,5 +66,13 @@ Las **inline binding** se expresan directamente en los atributos de las etiqueta
 
 	<body onload="duet.bind('test', { name: 'Click me' });">
 		<input type="button" data-dt="test" data-dt-value="#this.name + '!'" 
-		  data-dt-onclick="@alert('Hello world!');">
+			data-dt-onclick="@alert('Hello world!');">
 	</body>
+
+
+Dentro de las **inline-binding** se puede hacer referencia al elemento al que esta enlazado mediante la palabra reservada `this`, que representa el **duet-scope** del elemento. Este ámbito contiene todos los datos necesarios para interaccionar tanto con la vista como con el modelo:
+
+- **this**: Dentro del propio elemento `this`encontraremos todas la propiedades enlazadas al componente dentro de su propio contexto, es decir, si estamos dentro de un elemento de una lista este objecto representará el propio elemento seleccionado no el modelo completo.
+- **this.view**: Representa el objecto javascript del componente HTML enlazado al **inline-binding**. 
+- **this.model**: Corresponde al objeto del modelo que se encuentra enlazado a la vista.
+
