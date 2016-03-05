@@ -1,29 +1,33 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/codellion/duet-js/master/logo.PNG" width="300">
 </p>
-## Descripción
-Duet-js es una librería javascript que permite incluir atributos dinámicos en las etiquetas HTML, además permite enlazar dichas etiquetas a valores y cálculos en tiempo real permitiendo un diseño MVVM en la capa de presentación.
+## Descripción ##
+**Duet-js** es una librería javascript que permite incluir atributos dinámicos en las etiquetas HTML, además permite enlazar dichas etiquetas a valores y cálculos en tiempo real permitiendo un diseño MVVM en la capa de presentación.
 
 
 ## Principales características ###
-La mayor característica de duet-js es su facilidad y baja curva de aprendizaje debido a que está construido y diseñado sobre los estándares básicos de HTML.
+La mayor característica de **duet-js** es su facilidad y baja curva de aprendizaje debido a que está construido y diseñado sobre los estándares básicos de HTML.
 
 Sus principales características son:
 
-- **Bidirectional bindings**
-- **Lambda properties**
-- **Stringify and parse objects**
+- Bidirectional bindings
+- Dynamic HTML attributes
+- Support embedded javascript code
+- Lamdba expressions
+- Event bindings
+- No 3rd library dependencies
+- Developed in Typescript with ES6
 
 
 ## Aspectos básicos ##
 ### Vista ###
 La vista es la representación gráfica de la información que se desea mostrar, en este caso se expresa como una página HTML estándar con **duet-annotations** (`data-dt-{atributo_etiqueta}`) donde de forma rápida se puede extender cualquier atributo de una etiqueta HTML:
 
-**HTML estándar**
+*HTML estándar*
 
 	<span>Hola Mundo</span>
 
-**Duet-JS**
+*Duet-JS*
 
 	<span data-dt-innerHTML="message"></span> 
 
@@ -75,4 +79,9 @@ Dentro de las **inline-binding** se puede hacer referencia al elemento al que es
 - **this**: Dentro del propio elemento `this`encontraremos todas la propiedades enlazadas al componente dentro de su propio contexto, es decir, si estamos dentro de un elemento de una lista este objecto representará el propio elemento seleccionado no el modelo completo.
 - **this.view**: Representa el objecto javascript del componente HTML enlazado al **inline-binding**. 
 - **this.model**: Corresponde al objeto del modelo que se encuentra enlazado a la vista.
+
+
+(more coming soon)
+
+
 
