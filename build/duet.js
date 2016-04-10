@@ -873,7 +873,7 @@ var BindableProperty = (function () {
     Object.defineProperty(BindableProperty.prototype, "value", {
         get: function () {
             var propName = this.name;
-            if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && this.dirty == true) {
+            if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && (typeof this.dirty === "undefined" || this.dirty == true)) {
                 var result = null;
                 var func = this._funcExpresion;
                 if (func == null) {
@@ -888,7 +888,7 @@ var BindableProperty = (function () {
                     result = (function () {
                         var scope = self._parentValue;
                         scope.model = self.model;
-                        scope.view = this;
+                        scope.view = self.htmlComponent;
                         var evalFunction = DynamicCode.evalInContext(self._eventExpresion, scope);
                         scope.model = undefined;
                         scope.view = undefined;

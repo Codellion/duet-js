@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>README TEST</title>
+<script src="../build/duet.js"></script>
+<script type="text/javascript">
+
+	function onDocLoad() {
+				
+		var btTest = {
+            name: 'Click me!',
+            clickEvent: function(){ 
+                alert('Hello world!'); 
+            }
+        };
+
+        test = duet.bind('test', btTest);
+	}
+	
+</script>
+</head>
+
+<body onload="onDocLoad();">
+	<input type="button" data-dt="test" data-dt-value="name" data-dt-onclick="clickEvent">
+    <input type="button" data-dt="test" data-dt-value="#this.name + '!'" data-dt-onclick="@alert('Hello world!');">
+    <input type="button" id="ok" data-dt="test" data-dt-value="#this.model.name" name="Hello world!" data-dt-onclick="@alert(this.view.name);">
+</body>
+
+</html>

@@ -43,7 +43,7 @@ class BindableProperty {
 	get value(): any {
 		var propName = this.name;
 
-		if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && this.dirty == true) {
+		if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && (typeof this.dirty === "undefined" || this.dirty == true)) {
 			var result: any = null;
 			var func = this._funcExpresion;
 			if (func == null) {
@@ -61,7 +61,7 @@ class BindableProperty {
 				result = (function() {
 					var scope = self._parentValue;
 					scope.model = self.model;
-					scope.view = this;
+					scope.view = self.htmlComponent;
 
 					var evalFunction = DynamicCode.evalInContext(self._eventExpresion, scope);
 
