@@ -101,6 +101,12 @@ class ModelProperty<T> {
 
 		var binding = false;
 
+        for (var prop in this.component.attributes){
+            var attr = this.component.attributes[prop];
+            if(attr.name && attr.name.indexOf("dt") == 0)
+                this.component.dataset[attr.name.replace(/-/,'')] = attr.value;
+        }
+
 		for (var name in this.component.dataset) {
 			if (this.component.dataset.hasOwnProperty(name) && (<string>name).indexOf("dt") == 0) {
 				if (name.length > 2) {
@@ -438,8 +444,8 @@ class ModelProperty<T> {
     addChildrenListNode(childList: Array<any>, childNode: HTMLElement, template: HTMLElement): void {
         var templateDtElements = new Array<Element>();
         
-        var totalDocElements = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children']"));
-        var exclude = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'] [data-dt='children']"));
+        var totalDocElements = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'],[dt='children']"));
+        var exclude = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'] [data-dt='children'],[dt='children'] [dt='children']"));
 
         if (totalDocElements.length !== exclude.length) {
             for (var k = 0; k < totalDocElements.length; k++)

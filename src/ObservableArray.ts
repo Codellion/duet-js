@@ -18,7 +18,6 @@ class ObservableArray<T> extends Array<T> {
 	propertyChange: CustomEvent;
 
 	constructor(name: string, binding?: BindableProperty) {
-		var _self = this;
 		super();
 		this._name = name;
 		if (binding)

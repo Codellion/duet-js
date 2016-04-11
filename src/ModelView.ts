@@ -73,8 +73,8 @@ class ModelView<T> {
 			var docElements: Array<Element> = [];
 
 			if (elementContainer) {
-				var totalDocElements = Array.prototype.slice.call(elementContainer.querySelectorAll("[data-dt='" + elementModel + "']"));
-				var exclude = Array.prototype.slice.call(elementContainer.querySelectorAll('[data-dt=' + elementModel + '] [data-dt=' + elementModel + ']'));
+				var totalDocElements = Array.prototype.slice.call(elementContainer.querySelectorAll("[data-dt='" + elementModel + "'],[dt='" + elementModel + "']"));
+				var exclude = Array.prototype.slice.call(elementContainer.querySelectorAll('[data-dt=' + elementModel + '] [data-dt=' + elementModel + '],[dt=' + elementModel + '] [dt=' + elementModel + ']'));
 
 				if (totalDocElements.length !== exclude.length) {
 					for (var k = 0; k < totalDocElements.length; k++)
@@ -89,7 +89,7 @@ class ModelView<T> {
 				this.properties.push(mdContainer);
 			}
 			else
-				docElements = Array.prototype.slice.call(document.querySelectorAll("[data-dt='" + modelName + "']"));
+				docElements = Array.prototype.slice.call(document.querySelectorAll("[data-dt='" + modelName + "'],[dt='" + modelName + "']"));
 
 			if (docElements.length > 0) {
 				docElements.forEach((element, index) => {

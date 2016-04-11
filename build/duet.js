@@ -14,7 +14,6 @@ var __extends = (this && this.__extends) || function (d, b) {
 var ObservableArray = (function (_super) {
     __extends(ObservableArray, _super);
     function ObservableArray(name, binding) {
-        var _self = this;
         _super.call(this);
         this._name = name;
         if (binding)
@@ -165,8 +164,8 @@ var ModelView = (function () {
         if (modelName) {
             var docElements = [];
             if (elementContainer) {
-                var totalDocElements = Array.prototype.slice.call(elementContainer.querySelectorAll("[data-dt='" + elementModel + "']"));
-                var exclude = Array.prototype.slice.call(elementContainer.querySelectorAll('[data-dt=' + elementModel + '] [data-dt=' + elementModel + ']'));
+                var totalDocElements = Array.prototype.slice.call(elementContainer.querySelectorAll("[data-dt='" + elementModel + "'],[dt='" + elementModel + "']"));
+                var exclude = Array.prototype.slice.call(elementContainer.querySelectorAll('[data-dt=' + elementModel + '] [data-dt=' + elementModel + '],[dt=' + elementModel + '] [dt=' + elementModel + ']'));
                 if (totalDocElements.length !== exclude.length) {
                     for (var k = 0; k < totalDocElements.length; k++)
                         if (exclude.indexOf(totalDocElements[k]) === -1)
@@ -178,7 +177,7 @@ var ModelView = (function () {
                 this.properties.push(mdContainer);
             }
             else
-                docElements = Array.prototype.slice.call(document.querySelectorAll("[data-dt='" + modelName + "']"));
+                docElements = Array.prototype.slice.call(document.querySelectorAll("[data-dt='" + modelName + "'],[dt='" + modelName + "']"));
             if (docElements.length > 0) {
                 docElements.forEach(function (element, index) {
                     var newProperty = new ModelProperty(_this, element);
@@ -311,6 +310,11 @@ var ModelProperty = (function () {
         this.pendingSync = {};
         this.internalBindings = {};
         var binding = false;
+        for (var prop in this.component.attributes) {
+            var attr = this.component.attributes[prop];
+            if (attr.name && attr.name.indexOf("dt") == 0)
+                this.component.dataset[attr.name.replace(/-/, '')] = attr.value;
+        }
         for (var name in this.component.dataset) {
             if (this.component.dataset.hasOwnProperty(name) && name.indexOf("dt") == 0) {
                 if (name.length > 2) {
@@ -649,8 +653,8 @@ var ModelProperty = (function () {
     };
     ModelProperty.prototype.addChildrenListNode = function (childList, childNode, template) {
         var templateDtElements = new Array();
-        var totalDocElements = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children']"));
-        var exclude = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'] [data-dt='children']"));
+        var totalDocElements = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'],[dt='children']"));
+        var exclude = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'] [data-dt='children'],[dt='children'] [dt='children']"));
         if (totalDocElements.length !== exclude.length) {
             for (var k = 0; k < totalDocElements.length; k++)
                 if (exclude.indexOf(totalDocElements[k]) === -1)
