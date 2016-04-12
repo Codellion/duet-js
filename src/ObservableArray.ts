@@ -101,11 +101,17 @@ class ObservableArray<T> extends Array<T> {
     }
 
 	change(index: number, value: T): void {
-		var origin = this[index];
+        if(typeof(value) === 'object') {
+            var origin = this[index];
 
-		for (var prop in origin) {
-			if (value[prop])
-				origin[prop] = value[prop];
-		}
+            for (var prop in origin) {
+                if (value[prop])
+                    origin[prop] = value[prop];
+            }
+        }
+		else{
+            this[index] = value;
+            this._binding.dispatchChangeEvent(null);
+        }
 	}
 }

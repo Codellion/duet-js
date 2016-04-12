@@ -114,12 +114,14 @@ class ModelProperty<T> {
 					var bindValue = this.component.dataset[name].trim();
 
 					bindName = bindName.replace("html", "HTML");
-
-					if (bindValue.indexOf('#') === -1)
+                    
+                    if(bindName !== "bindingGeneration")  {
+                      if (bindValue.indexOf('#') === -1)
 						bindValue = bindValue.replace('.', '|');
 
-					this.componentBindings[bindName] = this.modelView.modelName + "|" + bindValue;
-					binding = true;
+                        this.componentBindings[bindName] = this.modelView.modelName + "|" + bindValue;
+                        binding = true;  
+                    }					
 				}
 			}
 
@@ -521,7 +523,7 @@ class ModelProperty<T> {
     }
 
 	static createAccesorProperty(propertyName: string, source: Object, property: BindableProperty): void {
-		if (Array.isArray(source) || source instanceof ObservableArray)
+		if (Array.isArray(source) || source instanceof ObservableArray || typeof(source) !== 'object')
 			return;
 
 		if (source['mutated-accesors'] && source['mutated-accesors'].indexOf(propertyName) != -1)

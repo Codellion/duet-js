@@ -222,6 +222,9 @@ class BindableProperty {
 				this.value = value;
 			this.dirty = true;
 		}
+        else if(internalExpression === "this") {
+            this.value = parentValue;
+        }
 		else {
 			this.value = value;
 		}
