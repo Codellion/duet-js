@@ -155,9 +155,9 @@ Como se puede comprobar para los tipos primitivos se utiliza la palabra reservad
 	<body onload="onDocLoad();">
 		<ul data-dt="test" data-dt-children="doneTasks">
 			<li>
-		            <span data-dt="children" data-dt-innerHTML="index"></span> - <span data-dt="children" data-dt-innerHTML="name"></span> <br />
-		            <span data-dt="children" data-dt-innerHTML="#this.index + ' - ' + this.name" ></span>
-		        </li>
+			    <span data-dt="children" data-dt-innerHTML="index"></span> - <span data-dt="children" data-dt-innerHTML="name"></span> <br />
+			    <span data-dt="children" data-dt-innerHTML="#this.index + ' - ' + this.name" ></span>
+			</li>
 		</ul>
 	</body>
 
