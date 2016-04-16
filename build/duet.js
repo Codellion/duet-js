@@ -1020,8 +1020,14 @@ var BindableProperty = (function () {
         configurable: true
     });
     BindableProperty.prototype.dispatchChangeEvent = function (argName) {
-        if (this._lastDispatchTime !== null && Date.now() - this._lastDispatchTime < 100)
+        var _this = this;
+        if (this._lastDispatchTime !== null && Date.now() - this._lastDispatchTime < 50) {
+            if (!this._pendingEvent)
+                this._pendingEvent = setTimeout(function () { return _this.dispatchChangeEvent(argName); }, 50);
             return;
+        }
+        clearTimeout(this._pendingEvent);
+        this._pendingEvent = undefined;
         this._lastDispatchTime = Date.now();
         if (this.ignore)
             return;

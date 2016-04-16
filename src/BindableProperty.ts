@@ -26,6 +26,7 @@ class BindableProperty {
 	private _objectValue: any;
 	private _ignore: boolean;
 	private _lastDispatchTime: number;
+	private _pendingEvent: number;
 
 	propertyChange: CustomEvent;
 
@@ -229,8 +230,14 @@ class BindableProperty {
 
 	dispatchChangeEvent(argName?: string) {
 
-		if(this._lastDispatchTime !== null && Date.now() - this._lastDispatchTime < 100)
+		if(this._lastDispatchTime !== null && Date.now() - this._lastDispatchTime < 50) {
+			if(!this._pendingEvent)
+				this._pendingEvent = setTimeout(() => this.dispatchChangeEvent(argName), 50);
 			return;
+		}
+
+		clearTimeout(this._pendingEvent);
+		this._pendingEvent = undefined;
 
 		this._lastDispatchTime = Date.now();
 
