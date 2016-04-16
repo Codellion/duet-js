@@ -10,8 +10,13 @@
 				
 		var btTest = {
             name: 'Click me!',
+            fontWeight: 'normal',
+            tasks: ['Task1','Task2','Task3'],
+            doneTasks: [ {index:1, name:'Task11'}, {index:2, name:'Task22'}, {index:3, name:'Task33'}],
             clickEvent: function(){ 
+                this.fontWeight = 'bold';
                 alert('Hello world!'); 
+                this.tasks.push('New task');
             }
         };
 
@@ -22,9 +27,23 @@
 </head>
 
 <body onload="onDocLoad();">
-	<input type="button" data-dt="test" data-dt-value="name" data-dt-onclick="clickEvent">
+	<input type="button" data-dt="test" data-dt-value="name" data-dt-onclick="clickEvent" data-dt-style.font-weight="fontWeight">
     <input type="button" data-dt="test" data-dt-value="#this.name + '!'" data-dt-onclick="@alert('Hello world!');">
-    <input type="button" id="ok" data-dt="test" data-dt-value="#this.model.name" name="Hello world!" data-dt-onclick="@alert(this.view.name);">
+    <input type="button" id="ok" data-dt="test" data-dt-value="#this.model.name" name="Hello world!" 
+        data-dt-onclick="@alert(this.view.name);" data-dt-style.font-weight="#'bold'">
+                
+    <ul data-dt="test" data-dt-children="tasks">
+        <li>
+            <span data-dt="children" data-dt-innerHTML="this" ></span>
+        </li>
+    </ul>
+    
+    <ul data-dt="test" data-dt-children="doneTasks">
+        <li>
+            <span data-dt="children" data-dt-innerHTML="index"></span> - <span data-dt="children" data-dt-innerHTML="name"></span> <br />
+            <span data-dt="children" data-dt-innerHTML="#this.index + ' - ' + this.name" ></span>
+        </li>
+    </ul>
 </body>
 
 </html>

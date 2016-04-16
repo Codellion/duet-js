@@ -80,6 +80,87 @@ Dentro de las **inline-binding** se puede hacer referencia al elemento al que es
 - **this.view**: Representa el objecto javascript del componente HTML enlazado al **inline-binding**. 
 - **this.model**: Corresponde al objeto del modelo que se encuentra enlazado a la vista.
 
+### Special bindings ###
+Exiten casos especiales en donde el enlace entre la vista y el modelo no es tan directo, estos son los **special bindings**, veamos algunos ejemplos:
+
+#### Atributos secundarios ####
+Algunos de los atributos de los componentes HTML son diccionarios de tipo clave->valor, como por ejemplo el atributo `style`, en estos casos para navegar entre los distintos niveles del arbol de propiedades se utiliza el caracter *`.`*.
+
+	
+		
+	<script>
+		function onLoad(){
+			var btTest = {
+				name: 'Click me!',
+				fontWeight: 'normal',
+				clickEvent: function(){ 
+					this.fontWeight = 'bold';
+					alert('Hello world!');
+				}
+			};
+
+			duet.bind('test', btTest);
+		}
+	</script>
+	<body onload="onLoad();">
+		<input type="button" data-dt="test" data-dt-value="name" data-dt-onclick="clickEvent" 			
+			data-dt-style.font-weight="fontWeight">	
+		<input type="button" data-dt="test" data-dt-value="#this.name + '!'" 
+			data-dt-onclick="@alert('Hello world!');" data-dt-style.font-weight="#'bold'">
+	</body>
+		
+
+
+#### Atributo Children ####
+El atributo `data-dt-children` se utiliza para trabajar con colecciones de forma que se renderiza una lista de elementos HTML, de esta forma de puede generar contenido dinámico trabajando con una plantilla totalmente HTML estandar, los elementos que queramos enlazar con **duet-js** contenidos en dicha plantilla deberán contener la etiqueta `data-dt="children"`.
+
+	<script>
+		function onLoad(){
+			var btTest = {
+				name: 'Click me!',
+				tasks: ['Task1','Task2','Task3'],
+				clickEvent: function(){ 
+					this.tasks.push('New task');
+				}
+			};
+
+			duet.bind('test', btTest);
+		}
+	</script>
+	<body onload="onDocLoad();">
+		<input type="button" data-dt="test" data-dt-value="name" data-dt-onclick="clickEvent" data-dt-style.font-weight="fontWeight">
+	                
+	    <ul data-dt="test" data-dt-children="tasks">
+	        <li>
+	            <span data-dt="children" data-dt-innerHTML="this" />
+	        </li>
+	    </ul>
+	</body>
+
+Como se puede comprobar para los tipos primitivos se utiliza la palabra reservada `this`, en el caso de enlazar colecciones de objetos se utilizaría la nomenclatura normal que hemos comentado más arriba:
+
+	<script>
+		function onLoad(){
+			var btTest = {
+				name: 'Click me!',
+				doneTasks: [ {index:1, name:'Task11'}, {index:2, name:'Task22'}, {index:3, name:'Task33'}],
+				clickEvent: function(){ 
+					this.tasks.push({index:4, name:'New task'});
+				}
+			};
+
+			duet.bind('test', btTest);
+		}
+	</script>
+	<body onload="onDocLoad();">
+		<ul data-dt="test" data-dt-children="doneTasks">
+			<li>
+			    <span data-dt="children" data-dt-innerHTML="index"></span> - <span data-dt="children" data-dt-innerHTML="name"></span> <br />
+			    <span data-dt="children" data-dt-innerHTML="#this.index + ' - ' + this.name" ></span>
+			</li>
+		</ul>
+	</body>
+
 
 (more coming soon)
 

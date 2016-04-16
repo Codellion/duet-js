@@ -116,10 +116,16 @@ var ObservableArray = (function (_super) {
         return res;
     };
     ObservableArray.prototype.change = function (index, value) {
-        var origin = this[index];
-        for (var prop in origin) {
-            if (value[prop])
-                origin[prop] = value[prop];
+        if (typeof (value) === 'object') {
+            var origin = this[index];
+            for (var prop in origin) {
+                if (value[prop])
+                    origin[prop] = value[prop];
+            }
+        }
+        else {
+            this[index] = value;
+            this._binding.dispatchChangeEvent(null);
         }
     };
     return ObservableArray;
@@ -321,10 +327,12 @@ var ModelProperty = (function () {
                     var bindName = name[2].toLowerCase() + name.slice(3);
                     var bindValue = this.component.dataset[name].trim();
                     bindName = bindName.replace("html", "HTML");
-                    if (bindValue.indexOf('#') === -1)
-                        bindValue = bindValue.replace('.', '|');
-                    this.componentBindings[bindName] = this.modelView.modelName + "|" + bindValue;
-                    binding = true;
+                    if (bindName !== "bindingGeneration") {
+                        if (bindValue.indexOf('#') === -1)
+                            bindValue = bindValue.replace('.', '|');
+                        this.componentBindings[bindName] = this.modelView.modelName + "|" + bindValue;
+                        binding = true;
+                    }
                 }
             }
             if (typeof this.component[bindName] !== "undefined" && this.component[bindName] != null && this.component[bindName].length > 0
@@ -709,7 +717,7 @@ var ModelProperty = (function () {
         }
     };
     ModelProperty.createAccesorProperty = function (propertyName, source, property) {
-        if (Array.isArray(source) || source instanceof ObservableArray)
+        if (Array.isArray(source) || source instanceof ObservableArray || typeof (source) !== 'object')
             return;
         if (source['mutated-accesors'] && source['mutated-accesors'].indexOf(propertyName) != -1)
             return;
@@ -853,6 +861,9 @@ var BindableProperty = (function () {
             else
                 this.value = value;
             this.dirty = true;
+        }
+        else if (internalExpression === "this") {
+            this.value = parentValue;
         }
         else {
             this.value = value;
