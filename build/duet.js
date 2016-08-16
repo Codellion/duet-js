@@ -918,6 +918,7 @@ var BindableProperty = (function () {
     });
     Object.defineProperty(BindableProperty.prototype, "value", {
         get: function () {
+            var _this = this;
             var propName = this.name;
             if ((this._internalExpression.indexOf('#') == 0 || this._internalExpression.indexOf('@') == 0) && (typeof this.dirty === "undefined" || this.dirty == true)) {
                 var result = null;
@@ -987,13 +988,15 @@ var BindableProperty = (function () {
                     if (typeof filterProp !== "undefined") {
                         var selectComp = this.htmlComponent;
                         if (!selectComp.multiple)
-                            this._objectValue = this._parentValue[childProp].find(function (n) { return n[filterProp] === selectComp.value; });
+                            this._objectValue = this._parentValue[childProp].find(function (n) { return n[filterProp] === _this._value; });
                         else {
-                            var lenght = selectComp.children.length;
                             var arrValue = [];
-                            for (var i = 0; i < lenght; i++) {
-                                if (selectComp.children[i]['selected']) {
-                                    arrValue.push(this._parentValue[childProp].find(function (n) { return n[filterProp] === selectComp.children[i]['value']; }));
+                            if (this._value != null) {
+                                if (!(this._value instanceof Array))
+                                    this._value = [this._value];
+                                var lenght = this._value.length;
+                                for (var i = 0; i < lenght; i++) {
+                                    arrValue.push(this._parentValue[childProp].find(function (n) { return n[filterProp] === _this._value[i]; }));
                                 }
                             }
                             this._objectValue = arrValue;
@@ -1015,6 +1018,8 @@ var BindableProperty = (function () {
     });
     Object.defineProperty(BindableProperty.prototype, "objectValue", {
         get: function () {
+            if (this.dirty)
+                var temp = this.value;
             return this._objectValue;
         },
         enumerable: true,

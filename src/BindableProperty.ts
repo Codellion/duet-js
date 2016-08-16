@@ -128,14 +128,18 @@ class BindableProperty {
 					var selectComp = <HTMLSelectElement>this.htmlComponent;
 
 					if (!selectComp.multiple)
-						this._objectValue = this._parentValue[childProp].find(n => n[filterProp] === selectComp.value);
+						this._objectValue = this._parentValue[childProp].find(n => n[filterProp] === this._value);
 					else {
-						var lenght = selectComp.children.length;
 						var arrValue = [];
 
-						for (var i = 0; i < lenght; i++) {
-							if (selectComp.children[i]['selected']) {
-								arrValue.push(this._parentValue[childProp].find(n => n[filterProp] === selectComp.children[i]['value']));
+						if(this._value != null) {
+							if(!(this._value instanceof Array))
+								this._value = [this._value];
+
+							var lenght = this._value.length;
+
+							for (var i = 0; i < lenght; i++) {
+								arrValue.push(this._parentValue[childProp].find(n => n[filterProp] === this._value[i]));
 							}
 						}
 
@@ -151,6 +155,8 @@ class BindableProperty {
 	}
 
 	get objectValue(): any {
+		if(this.dirty)
+			var temp = this.value;
 		return this._objectValue;
 	}
 
