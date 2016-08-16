@@ -24,7 +24,7 @@
 		    }),
 		  };
 
-		ko = duet.bind("ko", model);
+		ko = duet.bind(model);
 	}
 	
 </script>
@@ -32,13 +32,13 @@
 
 <body onload="onDocLoad();">
 	<div>
-	  <select data-dt="ko" data-dt-children="tickets" data-dt-value="chosenTicket">
-	    <option data-dt="children" data-dt-text="name" data-dt-value="name" />    
+	  <select dt-children="tickets" dt-value="chosenTicket">
+	    <option dt-text="name" dt-value="name" />    
 	  </select>
-	  <button data-dt="ko" data-dt-disabled="#this.chosenTicket === null" data-dt-onclick="@this.resetTicket()">Clear</button>
-	  <p data-dt="ko" data-dt-style.display="#this.chosenTicket === null? 'none':''">
-	    You have chosen <b data-dt="ko" data-dt-innerHTML="chosenTicket"></b>
-	    ($<span data-dt="ko" data-dt-innerHTML="#this.selectTicket()"></span>)
+	  <button dt-disabled="#this.chosenTicket === null" dt-onclick="@this.resetTicket()">Clear</button>
+	  <p dt-style.display="#this.chosenTicket === null? 'none':''">
+	    You have chosen <b dt-innerHTML="chosenTicket"></b>
+	    ($<span dt-innerHTML="#this.selectTicket()"></span>)
 	  </p>
 	</div>
 </body>

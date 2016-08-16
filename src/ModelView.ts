@@ -73,6 +73,8 @@ class ModelView<T> {
 			var docElements: Array<Element> = [];
 
 			if (elementContainer) {
+				docElements = this.getAllDuetNodes(elementContainer);
+				/*
 				var totalDocElements = Array.prototype.slice.call(elementContainer.querySelectorAll("[data-dt='" + elementModel + "'],[dt='" + elementModel + "']"));
 				var exclude = Array.prototype.slice.call(elementContainer.querySelectorAll('[data-dt=' + elementModel + '] [data-dt=' + elementModel + '],[dt=' + elementModel + '] [dt=' + elementModel + ']'));
 
@@ -84,12 +86,13 @@ class ModelView<T> {
 				}
 				else
 					docElements = totalDocElements;
-
+				*/
 				var mdContainer = new ModelProperty(this, <HTMLElement>elementContainer);
 				this.properties.push(mdContainer);
 			}
 			else
-				docElements = Array.prototype.slice.call(document.querySelectorAll("[data-dt='" + modelName + "'],[dt='" + modelName + "']"));
+				docElements = this.getAllDuetNodes();
+				//docElements = Array.prototype.slice.call(document.querySelectorAll("[data-dt='" + modelName + "'],[dt='" + modelName + "']"));
 
 			if (docElements.length > 0) {
 				docElements.forEach((element, index) => {
@@ -107,6 +110,43 @@ class ModelView<T> {
 		this.isInitialization = false;
 	}
 
+	getAllDuetNodes(element?: any) : Array<HTMLScriptElement> {
+		
+		if(!element)
+			element = document;
+
+		var dom =  element.getElementsByTagName('*');
+		var res = [];
+		var resParent = [];
+
+		for(var i=0; i<dom.length; i++){
+			var domObj = dom[i];
+			var domFound = false;
+
+			for(var j=0; j<domObj.attributes.length && !domFound; j++){
+				var attr = domObj.attributes[j];
+
+				if(attr.name.indexOf('dt') == 0 || attr.name.indexOf('dt') == 0 && attr.name != "dt-binding-generation") {
+					var isSubElement = false;
+					for(var k=0; k<resParent.length && !isSubElement; k++){
+						isSubElement = resParent[k].contains(domObj);
+					}
+
+					if(!isSubElement){
+						res.push(domObj);
+
+						if(domObj.hasAttribute('dt-children') || domObj.hasAttribute('data-dt-children'))
+							resParent.push(domObj);
+					}
+					
+					domFound = true;
+				}
+
+			}
+		}
+
+		return res;
+	}
 
 	private createObservableObject(obj: any, parentName?: string): void {
 		if (typeof (obj) !== "object" || (obj && obj["mutated-observation"]))

@@ -31,26 +31,26 @@
 		    this.timing = ''
 		}
 
-		view = duet.bind("deferred", { examples: [new AppViewModel("deferred"), new AppViewModel("standard")] });
+		view = duet.bind({ examples: [new AppViewModel("deferred"), new AppViewModel("standard")] });
 	}
-	
+
 </script>
 </head>
 
 <body onload="onDocLoad();">
-	<div data-dt="deferred" data-dt-children="examples">
+	<div dt-children="examples">
 		<div>
 		    <table>
-		        <tbody data-dt="children" data-dt-children="data">
+		        <tbody dt-children="data">
 		            <tr>
-		                <td data-dt="children" data-dt-innerHTML="name"></td>
-		                <td data-dt="children" data-dt-innerHTML="position"></td>
-		                <td data-dt="children" data-dt-innerHTML="location"></td>
+		                <td dt-innerHTML="name"></td>
+		                <td dt-innerHTML="position"></td>
+		                <td dt-innerHTML="location"></td>
 		            </tr>
 		        </tbody>
 		    </table>
-		    <button data-dt="children" data-dt-onclick="flipData" data-dt-innerHTML="type"></button>
-		    <div class="time" data-dt="children"  data-dt-innerHTML="timing"></div>
+		    <button dt-onclick="flipData" dt-innerHTML="type"></button>
+		    <div class="time" dt-innerHTML="timing"></div>
 	    </div>
 	</div>
 </body>

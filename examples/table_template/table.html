@@ -27,9 +27,9 @@
 <body>
 	<div>
 		<p>Data:</p>
-		<input type="text" data-dt="table" data-dt-value="newRow.name" />
-		<input type="text" data-dt="table" data-dt-value="newRow.surName" />
-		<input type="button" data-dt="table" value="Add"  data-dt-onclick="addNewRow" />
+		<input type="text" data-dt="table" dt-value="newRow.name" />
+		<input type="text" data-dt="table" dt-value="newRow.surName" />
+		<input type="button" data-dt="table" value="Add"  dt-onclick="addNewRow" />
 
 		<p>Table:</p>
 		<table>
@@ -39,10 +39,10 @@
 					<td>Surname</td>
 				</tr>
 			</thead>
-			<tbody data-dt="table" data-dt-children="rows">
+			<tbody data-dt="table" dt-children="rows">
 				<tr>
-					<td><span data-dt="children" data-dt-innerHTML="name" /></td>
-					<td><span data-dt="children" data-dt-innerHTML="surName" /></td>
+					<td><span  dt-innerHTML="name" /></td>
+					<td><span  dt-innerHTML="surName" /></td>
 				</tr>
 			</tbody>
 		</table>

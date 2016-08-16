@@ -69,8 +69,8 @@ class ModelProperty<T> {
                         for(var i = 0; i < mutation.removedNodes.length; i++) {
                              if(mutation.removedNodes[i] instanceof HTMLElement) {
                                 var childNode = <HTMLElement>mutation.removedNodes[i];
-                                if(childNode.dataset["dtBindingGeneration"]){
-                                    propToMap.splice(childNode.dataset["dtBindingGeneration"], 1);
+                                if(childNode.dataset["dtBindingGeneration"] && childNode.dataset["dtBindingGeneration"] != "undefined"){
+                                    propToMap.splice(parseInt(childNode.dataset["dtBindingGeneration"]), 1);
                                 }
                             }                               
                         }
@@ -101,11 +101,25 @@ class ModelProperty<T> {
 
 		var binding = false;
 
+		this.createDatasetAttributes(this.component);
+
+		/*
         for (var prop in this.component.attributes){
             var attr = this.component.attributes[prop];
-            if(attr.name && attr.name.indexOf("dt") == 0)
-                this.component.dataset[attr.name.replace(/-/,'')] = attr.value;
+            if(attr.name && attr.name.indexOf("dt") == 0) {
+            	var attrName = attr.name;
+				var iattrName = attrName.indexOf('-');
+
+            	while(iattrName != -1){
+            		attrName = attrName.replace(/-/, attrName[iattrName + 1].toUpperCase());
+            		attrName = attrName.slice(0, iattrName + 1) + attrName.slice(iattrName + 2	);
+					iattrName = attrName.indexOf('-');
+            	}
+
+                this.component.dataset[attrName] = attr.value;
+            }
         }
+		*/
 
 		for (var name in this.component.dataset) {
 			if (this.component.dataset.hasOwnProperty(name) && (<string>name).indexOf("dt") == 0) {
@@ -136,6 +150,8 @@ class ModelProperty<T> {
 					this._template = <HTMLElement>node;
 				}
 
+				node.dataset["dtBindingGeneration"] = undefined;
+				this.createDatasetAttributes(node);
 				this.component.removeChild(node);
 			}
 		}
@@ -194,6 +210,24 @@ class ModelProperty<T> {
 		this.componentSync = new CustomEvent("componentSync", { detail: this });
 	}
 
+	private createDatasetAttributes(element: HTMLElement) :void {
+		for (var prop in element.attributes){
+            var attr = element.attributes[prop];
+            if(attr.name && attr.name.indexOf("dt") == 0) {
+            	var attrName = attr.name;
+				var iattrName = attrName.indexOf('-');
+
+            	while(iattrName != -1){
+            		attrName = attrName.replace(/-/, attrName[iattrName + 1].toUpperCase());
+            		attrName = attrName.slice(0, iattrName + 1) + attrName.slice(iattrName + 2	);
+					iattrName = attrName.indexOf('-');
+            	}
+
+                element.dataset[attrName] = attr.value;
+            }
+        }
+	}
+
 	private listenChangeEvents(propName: string, bindProperty: BindableProperty): void {
 		document.addEventListener(bindProperty.propertyChangeEvent,
 			(e: CustomEvent) => this.onBindingChange(<CustomEvent>e), false);
@@ -231,10 +265,14 @@ class ModelProperty<T> {
 					var prop = this.getComponentBinding(e.detail.name);
 
 					if (prop != null) {
-						if (this.component[prop][e.detail.index].remove)
+						this.component[prop][e.detail.index].dataset["dtBindingGeneration"] = undefined;
+
+						if (this.component[prop][e.detail.index].remove){
 							this.component[prop][e.detail.index].remove();
-						else
+						}
+						else{
 							this.component.removeChild(this.component.children[e.detail.index]);
+						}
 					}
 				}
 			});
@@ -258,8 +296,8 @@ class ModelProperty<T> {
 	}
 
  private bindingObservableItem(propName: string, index: number, item: any, bindName: string) {
-    if (!this.bindings[propName] || this._template == undefined)
-        return
+    	if (!this.bindings[propName] || this._template == undefined)
+        	return
 
 		var newModelName = this.modelView.modelName + "|" + propName + "|" + index;
 
@@ -410,6 +448,8 @@ class ModelProperty<T> {
 			if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
 				if (binding.dirty) {
 					for (var j = internalComponent[prop].length - 1; j > -1; j--) {
+						internalComponent[prop][j].dataset["dtBindingGeneration"] = undefined;
+
 						if (internalComponent[prop][j].remove)
 							internalComponent[prop][j].remove();
 						else
@@ -444,6 +484,7 @@ class ModelProperty<T> {
 	}
     
     addChildrenListNode(childList: Array<any>, childNode: HTMLElement, template: HTMLElement): void {
+        /*
         var templateDtElements = new Array<Element>();
         
         var totalDocElements = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'],[dt='children']"));
@@ -457,7 +498,9 @@ class ModelProperty<T> {
         }
         else
             templateDtElements = totalDocElements;
-        
+        */
+
+        var templateDtElements: Array<Element>  = this._modelView.getAllDuetNodes(template);
         
         var nodeElements: NodeListOf<Element> = childNode.querySelectorAll("*");
         var templateElements: NodeListOf<Element> = template.querySelectorAll('*');

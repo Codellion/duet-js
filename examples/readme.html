@@ -27,21 +27,21 @@
 </head>
 
 <body onload="onDocLoad();">
-	<input type="button" data-dt="test" data-dt-value="name" data-dt-onclick="clickEvent" data-dt-style.font-weight="fontWeight">
-    <input type="button" data-dt="test" data-dt-value="#this.name + '!'" data-dt-onclick="@alert('Hello world!');">
-    <input type="button" id="ok" data-dt="test" data-dt-value="#this.model.name" name="Hello world!" 
-        data-dt-onclick="@alert(this.view.name);" data-dt-style.font-weight="#'bold'">
+	<input type="button" data-dt="test" dt-value="name" dt-onclick="clickEvent" dt-style.font-weight="fontWeight">
+    <input type="button" data-dt="test" dt-value="#this.name + '!'" dt-onclick="@alert('Hello world!');">
+    <input type="button" id="ok" data-dt="test" dt-value="#this.model.name" name="Hello world!" 
+        dt-onclick="@alert(this.view.name);" dt-style.font-weight="#'bold'">
                 
-    <ul data-dt="test" data-dt-children="tasks">
+    <ul data-dt="test" dt-children="tasks">
         <li>
-            <span data-dt="children" data-dt-innerHTML="this" ></span>
+            <span  dt-innerHTML="this" ></span>
         </li>
     </ul>
     
-    <ul data-dt="test" data-dt-children="doneTasks">
+    <ul data-dt="test" dt-children="doneTasks">
         <li>
-            <span data-dt="children" data-dt-innerHTML="index"></span> - <span data-dt="children" data-dt-innerHTML="name"></span> <br />
-            <span data-dt="children" data-dt-innerHTML="#this.index + ' - ' + this.name" ></span>
+            <span  dt-innerHTML="index"></span> - <span  dt-innerHTML="name"></span> <br />
+            <span  dt-innerHTML="#this.index + ' - ' + this.name" ></span>
         </li>
     </ul>
 </body>

@@ -47,7 +47,7 @@
 			})
 		};
 
-		tdd = duet.bind("tdd", model);
+		tdd = duet.bind(model);
 	});
 	
 </script>
@@ -56,25 +56,25 @@
 <body>
 	<div>
 		<p>Task description:</p>
-		<input type="text" data-dt="tdd" data-dt-value="task" />
-		<input type="button" data-dt="tdd" data-dt-value="#this.isSelectTask? 'Update': 'Add'" 
-			data-dt-disabled="#!this.task || this.task.length == 0" data-dt-onclick="updateTasks" />
-		<input type="button" value="clean" data-dt="tdd" data-dt-onclick="cleanTask" />
+		<input type="text" dt-value="task" />
+		<input type="button" dt-value="#this.isSelectTask? 'Update': 'Add'" 
+			dt-disabled="#!this.task || this.task.length == 0" dt-onclick="updateTasks" />
+		<input type="button" value="clean"  dt-onclick="cleanTask" />
 		<p>
-			<input id="chkArchive" type="checkbox" data-dt="tdd" data-dt-checked="showArchiveTasks" data-dt-onchange="cleanTask" />
-			<label for="chkArchive">Show archived (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(true, false)"></span>)</label>
+			<input id="chkArchive" type="checkbox"  dt-checked="showArchiveTasks" dt-onchange="cleanTask" />
+			<label for="chkArchive">Show archived (<span  dt-innerHTML="#this.countTasks(true, false)"></span>)</label>
 		</p>
-		<p>Tasks (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(false, true)"></span>)</p>
-		<ul data-dt="tdd" data-childrenMap="tasks" data-dt-children="#var force = this.showArchiveTasks; this.tasks.filter(n => !n.done || force)">
+		<p>Tasks (<span  dt-innerHTML="#this.countTasks(false, true)"></span>)</p>
+		<ul  data-childrenMap="tasks" dt-children="#var force = this.showArchiveTasks; this.tasks.filter(n => !n.done || force)">
 			<il>
-				<input type="checkbox" data-dt="children" data-dt-checked="done" />				
-				<span data-dt="children" data-dt-innerHTML="description" data-dt-style.text-decoration="#this.done? 'line-through': ''"
-					 data-dt-onclick="@selectTask(this)"  onmouseover="" style="cursor: pointer;"></span>
+				<input type="checkbox"  dt-checked="done" />				
+				<span  dt-innerHTML="description" dt-style.text-decoration="#this.done? 'line-through': ''"
+					 dt-onclick="@selectTask(this)"  onmouseover="" style="cursor: pointer;"></span>
 				<br />
-                <ul data-dt="children" data-childrenMap="subTasks" data-dt-children="subTasks">
+                <ul  data-childrenMap="subTasks" dt-children="subTasks">
                     <il>
-                        <input type="checkbox" data-dt="children" data-dt-checked="done" />				
-                        <span data-dt="children" data-dt-innerHTML="description" data-dt-style.text-decoration="#this.done? 'line-through': ''"
+                        <input type="checkbox"  dt-checked="done" />				
+                        <span  dt-innerHTML="description" dt-style.text-decoration="#this.done? 'line-through': ''"
                             onmouseover="" style="cursor: pointer;"></span>
                         <br />
                     </il>

@@ -46,7 +46,7 @@
 			})
 		};
 
-		tdd = duet.bind("tdd", model);
+		tdd = duet.bind(model);
 	});
 	
 </script>
@@ -55,16 +55,16 @@
 <body>
 	<div>
 		<p>Task description:</p>
-		<input type="text" data-dt="tdd" data-dt-value="task" />
-		<input type="button" data-dt="tdd" data-dt-value="#this.isSelectTask? 'Update': 'Add'" 
-			data-dt-disabled="#!this.task || this.task.length == 0" data-dt-onclick="updateTasks" />
-		<input type="button" value="clean" data-dt="tdd" data-dt-onclick="cleanTask" />
+		<input type="text" dt-value="task" />
+		<input type="button" dt-value="#this.isSelectTask? 'Update': 'Add'" 
+			dt-disabled="#!this.task || this.task.length == 0" dt-onclick="updateTasks" />
+		<input type="button" value="clean" dt-onclick="cleanTask" />
 		<p>
-			<input id="chkArchive" type="checkbox" data-dt="tdd" data-dt-checked="showArchiveTasks" data-dt-onchange="cleanTask" />
-			<label for="chkArchive">Show archived (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(true, false)"></span>)</label>
+			<input id="chkArchive" type="checkbox" dt-checked="showArchiveTasks" dt-onchange="cleanTask" />
+			<label for="chkArchive">Show archived (<span dt-innerHTML="#this.countTasks(true, false)"></span>)</label>
 		</p>
-		<p>Tasks (<span data-dt="tdd" data-dt-innerHTML="#this.countTasks(false, true)"></span>)</p>
-		<ul data-dt="tdd" data-dt-children="#var force = this.showArchiveTasks; this.tasks.filter(n => !n.done || force)">
+		<p>Tasks (<span dt-innerHTML="#this.countTasks(false, true)"></span>)</p>
+		<ul dt-children="#var force = this.showArchiveTasks; this.tasks.filter(n => !n.done || force)">
 			<object id="task-template" type="text/html" data="task_template.html"></object>
 		</ul>
 	</div>

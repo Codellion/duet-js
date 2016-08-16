@@ -86,7 +86,12 @@ class ObservableArray<T> extends Array<T> {
 	}
 
     splice(start: number, deleteCount?: number, ...items: T[]): T[] {
-        var res = Array.prototype.splice.call(this, [start, deleteCount, items]);
+        var res = null;
+
+        if(items && items.length > 0)
+        	res = Array.prototype.splice.call(this, start, deleteCount, items);
+        else
+        	res = Array.prototype.splice.call(this, start, deleteCount);
         
         res.forEach((n) => {
             if (this._binding === null) {

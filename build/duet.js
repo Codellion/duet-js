@@ -104,7 +104,11 @@ var ObservableArray = (function (_super) {
         for (var _i = 2; _i < arguments.length; _i++) {
             items[_i - 2] = arguments[_i];
         }
-        var res = Array.prototype.splice.call(this, [start, deleteCount, items]);
+        var res = null;
+        if (items && items.length > 0)
+            res = Array.prototype.splice.call(this, start, deleteCount, items);
+        else
+            res = Array.prototype.splice.call(this, start, deleteCount);
         res.forEach(function (n) {
             if (_this._binding === null) {
                 _this.elementRemoved = new CustomEvent(_this.name + "elementRemoved", { detail: new ObservableItem(_this.name, n, 0) });
@@ -170,20 +174,12 @@ var ModelView = (function () {
         if (modelName) {
             var docElements = [];
             if (elementContainer) {
-                var totalDocElements = Array.prototype.slice.call(elementContainer.querySelectorAll("[data-dt='" + elementModel + "'],[dt='" + elementModel + "']"));
-                var exclude = Array.prototype.slice.call(elementContainer.querySelectorAll('[data-dt=' + elementModel + '] [data-dt=' + elementModel + '],[dt=' + elementModel + '] [dt=' + elementModel + ']'));
-                if (totalDocElements.length !== exclude.length) {
-                    for (var k = 0; k < totalDocElements.length; k++)
-                        if (exclude.indexOf(totalDocElements[k]) === -1)
-                            docElements.push(totalDocElements[k]);
-                }
-                else
-                    docElements = totalDocElements;
+                docElements = this.getAllDuetNodes(elementContainer);
                 var mdContainer = new ModelProperty(this, elementContainer);
                 this.properties.push(mdContainer);
             }
             else
-                docElements = Array.prototype.slice.call(document.querySelectorAll("[data-dt='" + modelName + "'],[dt='" + modelName + "']"));
+                docElements = this.getAllDuetNodes();
             if (docElements.length > 0) {
                 docElements.forEach(function (element, index) {
                     var newProperty = new ModelProperty(_this, element);
@@ -217,6 +213,33 @@ var ModelView = (function () {
         enumerable: true,
         configurable: true
     });
+    ModelView.prototype.getAllDuetNodes = function (element) {
+        if (!element)
+            element = document;
+        var dom = element.getElementsByTagName('*');
+        var res = [];
+        var resParent = [];
+        for (var i = 0; i < dom.length; i++) {
+            var domObj = dom[i];
+            var domFound = false;
+            for (var j = 0; j < domObj.attributes.length && !domFound; j++) {
+                var attr = domObj.attributes[j];
+                if (attr.name.indexOf('dt') == 0 || attr.name.indexOf('dt') == 0 && attr.name != "dt-binding-generation") {
+                    var isSubElement = false;
+                    for (var k = 0; k < resParent.length && !isSubElement; k++) {
+                        isSubElement = resParent[k].contains(domObj);
+                    }
+                    if (!isSubElement) {
+                        res.push(domObj);
+                        if (domObj.hasAttribute('dt-children') || domObj.hasAttribute('data-dt-children'))
+                            resParent.push(domObj);
+                    }
+                    domFound = true;
+                }
+            }
+        }
+        return res;
+    };
     ModelView.prototype.createObservableObject = function (obj, parentName) {
         var _this = this;
         if (typeof (obj) !== "object" || (obj && obj["mutated-observation"]))
@@ -316,11 +339,7 @@ var ModelProperty = (function () {
         this.pendingSync = {};
         this.internalBindings = {};
         var binding = false;
-        for (var prop in this.component.attributes) {
-            var attr = this.component.attributes[prop];
-            if (attr.name && attr.name.indexOf("dt") == 0)
-                this.component.dataset[attr.name.replace(/-/, '')] = attr.value;
-        }
+        this.createDatasetAttributes(this.component);
         for (var name in this.component.dataset) {
             if (this.component.dataset.hasOwnProperty(name) && name.indexOf("dt") == 0) {
                 if (name.length > 2) {
@@ -344,6 +363,8 @@ var ModelProperty = (function () {
                 else {
                     this._template = node;
                 }
+                node.dataset["dtBindingGeneration"] = undefined;
+                this.createDatasetAttributes(node);
                 this.component.removeChild(node);
             }
         }
@@ -438,8 +459,8 @@ var ModelProperty = (function () {
                             for (var i = 0; i < mutation.removedNodes.length; i++) {
                                 if (mutation.removedNodes[i] instanceof HTMLElement) {
                                     var childNode = mutation.removedNodes[i];
-                                    if (childNode.dataset["dtBindingGeneration"]) {
-                                        propToMap.splice(childNode.dataset["dtBindingGeneration"], 1);
+                                    if (childNode.dataset["dtBindingGeneration"] && childNode.dataset["dtBindingGeneration"] != "undefined") {
+                                        propToMap.splice(parseInt(childNode.dataset["dtBindingGeneration"]), 1);
                                     }
                                 }
                             }
@@ -460,6 +481,21 @@ var ModelProperty = (function () {
         enumerable: true,
         configurable: true
     });
+    ModelProperty.prototype.createDatasetAttributes = function (element) {
+        for (var prop in element.attributes) {
+            var attr = element.attributes[prop];
+            if (attr.name && attr.name.indexOf("dt") == 0) {
+                var attrName = attr.name;
+                var iattrName = attrName.indexOf('-');
+                while (iattrName != -1) {
+                    attrName = attrName.replace(/-/, attrName[iattrName + 1].toUpperCase());
+                    attrName = attrName.slice(0, iattrName + 1) + attrName.slice(iattrName + 2);
+                    iattrName = attrName.indexOf('-');
+                }
+                element.dataset[attrName] = attr.value;
+            }
+        }
+    };
     ModelProperty.prototype.listenChangeEvents = function (propName, bindProperty) {
         var _this = this;
         document.addEventListener(bindProperty.propertyChangeEvent, function (e) { return _this.onBindingChange(e); }, false);
@@ -487,10 +523,13 @@ var ModelProperty = (function () {
                 if (e.detail instanceof ObservableItem) {
                     var prop = _this.getComponentBinding(e.detail.name);
                     if (prop != null) {
-                        if (_this.component[prop][e.detail.index].remove)
+                        _this.component[prop][e.detail.index].dataset["dtBindingGeneration"] = undefined;
+                        if (_this.component[prop][e.detail.index].remove) {
                             _this.component[prop][e.detail.index].remove();
-                        else
+                        }
+                        else {
                             _this.component.removeChild(_this.component.children[e.detail.index]);
+                        }
                     }
                 }
             });
@@ -629,6 +668,7 @@ var ModelProperty = (function () {
             if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
                 if (binding.dirty) {
                     for (var j = internalComponent[prop].length - 1; j > -1; j--) {
+                        internalComponent[prop][j].dataset["dtBindingGeneration"] = undefined;
                         if (internalComponent[prop][j].remove)
                             internalComponent[prop][j].remove();
                         else
@@ -660,16 +700,7 @@ var ModelProperty = (function () {
         }
     };
     ModelProperty.prototype.addChildrenListNode = function (childList, childNode, template) {
-        var templateDtElements = new Array();
-        var totalDocElements = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'],[dt='children']"));
-        var exclude = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'] [data-dt='children'],[dt='children'] [dt='children']"));
-        if (totalDocElements.length !== exclude.length) {
-            for (var k = 0; k < totalDocElements.length; k++)
-                if (exclude.indexOf(totalDocElements[k]) === -1)
-                    templateDtElements.push(totalDocElements[k]);
-        }
-        else
-            templateDtElements = totalDocElements;
+        var templateDtElements = this._modelView.getAllDuetNodes(template);
         var nodeElements = childNode.querySelectorAll("*");
         var templateElements = template.querySelectorAll('*');
         var newModel = {};
@@ -1088,8 +1119,8 @@ var BindableProperty = (function () {
 var duet = (function () {
     function duet() {
     }
-    duet.bind = function (modelName, model) {
-        return new ModelView(modelName, model);
+    duet.bind = function (model) {
+        return new ModelView("virtualModel", model);
     };
     return duet;
 })();
