@@ -6,15 +6,6 @@ module.exports = function(grunt) {
   // Project configuration.
   // Combine all files in src/
   grunt.initConfig({
-    /*concat: {
-      dist: {
-
-        src : ['src/BindableProperty.js', 'src/DynamicCode.js', 'src/IDictionary.js',
-               'src/ModelProperty.js', 'src/ModelView.js', 'src/ObservableArray.js',
-               'src/ObservableItem.js', 'src/Duet.js'],
-        dest : 'build/duet.js'
-      },
-    },*/
     ts: {
         default: {
             tsconfig: 'src/tsconfig.json'  
@@ -37,11 +28,6 @@ module.exports = function(grunt) {
     grunt.log.write('Ran my task.');
   });
 
-  /*grunt.loadNpmTasks('grunt-contrib-concat');
-  // Finally run the tasks, with options and a callback when we're done
-  grunt.tasks(['default', 'concat'], {}, function() {
-    grunt.log.ok('Done running tasks.');
-  });*/
   grunt.loadNpmTasks('grunt-ts');
   grunt.loadNpmTasks('grunt-contrib-uglify');
 

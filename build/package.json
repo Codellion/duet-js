@@ -1,0 +1,26 @@
+{
+  "name": "duet-js",
+  "version": "0.2.2",
+  "description": "Duet JS is a javascript framework MVVM Typescript written. Its function is to simplify the interaction between UI and data, providing dynamism to the attributes of HTML without reinventing the wheel, which allows a quick learning curve.",
+  "main": "duet.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Codellion/duet-js.git"
+  },
+  "keywords": [
+    "MVVM",
+    "Javascript",
+    "client",
+    "framework",
+    "typescript"
+  ],
+  "author": "Antonio José Fernández Castillo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Codellion/duet-js/issues"
+  },
+  "homepage": "https://github.com/Codellion/duet-js#readme"
+}
