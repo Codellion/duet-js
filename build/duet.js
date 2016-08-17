@@ -230,14 +230,14 @@ var ModelView = (function () {
             var domFound = false;
             if (domObj.attributes.hasOwnProperty("dt") || domObj.attributes.hasOwnProperty("data-dt")) {
                 if (domObj.attributes.hasOwnProperty("dt")) {
-                    validNode = domObj.attributes["dt"].value == this.modelName;
+                    validNode = domObj.attributes["dt"].value == this.originalModel.modelName;
                 }
                 else if (domObj.attributes.hasOwnProperty("data-dt")) {
-                    validNode = domObj.attributes["data-dt"].value == this.modelName;
+                    validNode = domObj.attributes["data-dt"].value == this.originalModel.modelName;
                 }
             }
             else
-                validNode = "duet.model" == this.modelName;
+                validNode = "duet.model" == this.originalModel.modelName;
             if (validNode) {
                 for (var j = 0; j < domObj.attributes.length && !domFound; j++) {
                     var attr = domObj.attributes[j];
