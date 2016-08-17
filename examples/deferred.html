@@ -18,7 +18,7 @@
 		        if(type === "deferred")
 		        	this._data.ignore = true;
 
-		        for (var i = 0; i < 999; i++) {
+		        for (var i = 0; i < 499999; i++) {
 		            this.data = this.data.reverse();
 		        }
 
@@ -28,7 +28,7 @@
 		        
 		        this.timing = (new Date().getTime() - starttime) + ' ms';
 		    }
-		    this.timing = ''
+		    this.timing = '';
 		}
 
 		view = duet.bind({ examples: [new AppViewModel("deferred"), new AppViewModel("standard")] });

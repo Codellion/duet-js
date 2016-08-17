@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Title of the document</title>
+<script src="../build/duet.js"></script>
+<script type="text/javascript">
+
+	function AppViewModel() {
+	    this.start = function () {
+        	this.interval = setInterval(function() { 
+        			duet.subModels["model2"].actualCount++;
+        		}, 25);
+	        
+	    }
+
+	    this.textVisible = 'none';
+
+	    this.stop = function() {
+        	clearInterval(this.interval); 
+	    }
+
+	    this.bind = function() {
+	    	this.textVisible = 'block';
+	    	duet.bind(new AppViewSubModel2(), "model2");
+	    	duet.bind(new AppViewSubModel3(), "model3");
+	    }
+	}
+
+	function AppViewSubModel() {
+	    this.actualCount = 0;
+	    this.tests = ["uno", "dos"];
+	}
+
+	function AppViewSubModel2() {
+	    this.actualCount = 100;
+	    this.tests = ["1", "2"];
+	}
+
+	function AppViewSubModel3() {
+	    this.message = "Hola Mundo!!!";
+	}
+
+	duet.bind(new AppViewModel());
+	duet.bind(new AppViewSubModel(), "model2");
+	duet.init();
+
+</script>
+</head>
+<body>
+	<div>
+		<div dt-style.display="textVisible">
+	    	<input type="text" dt="model3" dt-value="message"/>
+	    	<span dt="model3" dt-innerHTML="message"></span>
+	    </div>
+	    <button dt-onclick="bind">Enlazar nuevo modelo</button>
+	    <span dt="model2" dt-innerHTML="actualCount"></span>
+	    <select dt="model2" dt-children="tests">
+	    	<option dt-text="this"></option>
+	    </select>
+	    <button dt-onclick="start">Start</button>
+	    <button dt-onclick="stop">Stop</button>
+    </div>
+</body>
+
+</html>

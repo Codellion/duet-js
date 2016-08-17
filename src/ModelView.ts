@@ -23,6 +23,7 @@ class ModelView<T> {
 	isInitialization: boolean;
 
 	private _modelName: string;
+	private _isUnbind: boolean;
 
 	get bindings(): IDictionary<BindableProperty> {
 		return <IDictionary<BindableProperty>>window[this.modelName + "_dt-bindings"];
@@ -74,25 +75,12 @@ class ModelView<T> {
 
 			if (elementContainer) {
 				docElements = this.getAllDuetNodes(elementContainer);
-				/*
-				var totalDocElements = Array.prototype.slice.call(elementContainer.querySelectorAll("[data-dt='" + elementModel + "'],[dt='" + elementModel + "']"));
-				var exclude = Array.prototype.slice.call(elementContainer.querySelectorAll('[data-dt=' + elementModel + '] [data-dt=' + elementModel + '],[dt=' + elementModel + '] [dt=' + elementModel + ']'));
-
-				if (totalDocElements.length !== exclude.length) {
-					for (var k = 0; k < totalDocElements.length; k++)
-						if (exclude.indexOf(totalDocElements[k]) === -1)
-							docElements.push(totalDocElements[k]);
-
-				}
-				else
-					docElements = totalDocElements;
-				*/
+				
 				var mdContainer = new ModelProperty(this, <HTMLElement>elementContainer);
 				this.properties.push(mdContainer);
 			}
 			else
 				docElements = this.getAllDuetNodes();
-				//docElements = Array.prototype.slice.call(document.querySelectorAll("[data-dt='" + modelName + "'],[dt='" + modelName + "']"));
 
 			if (docElements.length > 0) {
 				docElements.forEach((element, index) => {
@@ -110,6 +98,14 @@ class ModelView<T> {
 		this.isInitialization = false;
 	}
 
+	unbind(): void {
+		this.bindings = {};
+		this.properties.forEach(n => n.isUnbind = true);
+		this._isUnbind = true;
+
+		this.subModels.forEach(subMd => subMd.unbind());
+	}
+
 	getAllDuetNodes(element?: any) : Array<HTMLScriptElement> {
 		
 		if(!element)
@@ -123,25 +119,43 @@ class ModelView<T> {
 			var domObj = dom[i];
 			var domFound = false;
 
-			for(var j=0; j<domObj.attributes.length && !domFound; j++){
-				var attr = domObj.attributes[j];
-
-				if(attr.name.indexOf('dt') == 0 || attr.name.indexOf('dt') == 0 && attr.name != "dt-binding-generation") {
-					var isSubElement = false;
-					for(var k=0; k<resParent.length && !isSubElement; k++){
-						isSubElement = resParent[k].contains(domObj);
-					}
-
-					if(!isSubElement){
-						res.push(domObj);
-
-						if(domObj.hasAttribute('dt-children') || domObj.hasAttribute('data-dt-children'))
-							resParent.push(domObj);
-					}
-					
-					domFound = true;
+			if(domObj.attributes.hasOwnProperty("dt") || domObj.attributes.hasOwnProperty("data-dt")){
+				if(domObj.attributes.hasOwnProperty("dt")) {
+					validNode = domObj.attributes["dt"].value == this.modelName;
 				}
+				else if(domObj.attributes.hasOwnProperty("data-dt")) {
+					validNode = domObj.attributes["data-dt"].value == this.modelName;
+				}
+			}
+			else
+				validNode = "duet.model" == this.modelName;
 
+			if(validNode){
+				for(var j=0; j<domObj.attributes.length && !domFound; j++){
+					var attr = domObj.attributes[j];
+					var attrName = attr.name;
+					var validNode = true;
+
+					if(attr.name.indexOf('data-') == 0){
+						attrName = attr.name.slice(5);
+					}
+
+					if(attrName.indexOf('dt') == 0 || attrName.indexOf('dt') == 0 && attrName != "dt-binding-generation") {
+						var isSubElement = false;
+						for(var k=0; k<resParent.length && !isSubElement; k++){
+							isSubElement = resParent[k].contains(domObj);
+						}
+
+						if(!isSubElement){
+							res.push(domObj);
+
+							if(domObj.hasAttribute('dt-children') || domObj.hasAttribute('data-dt-children'))
+								resParent.push(domObj);
+						}
+						
+						domFound = true;
+					}
+				}
 			}
 		}
 
@@ -152,6 +166,7 @@ class ModelView<T> {
 		if (typeof (obj) !== "object" || (obj && obj["mutated-observation"]))
 			return;
 
+		var instance = this;
 		var parentPropName = "";
 
 		if (parentName)
@@ -182,9 +197,14 @@ class ModelView<T> {
 				this.bindings[propertyBindName] = result;
 
 				document.addEventListener(result.propertyChangeEvent,
-					(args: CustomEvent) => {
-						if (!this.isInitialization) {
-							this.checkBindDependencies(args);
+					function (args: CustomEvent) {
+						if(instance._isUnbind) {
+							document.removeEventListener(result.propertyChangeEvent, <any>arguments.callee, false);
+							return;
+						}
+
+						if (!instance.isInitialization) {
+							instance.checkBindDependencies(args);
 
 							if (obj["_parentReference"] && obj["_parentReference"]._binding) {
 								obj["_parentReference"]._binding.dispatchChangeEvent(args.detail.internalExpression);

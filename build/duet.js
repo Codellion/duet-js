@@ -213,6 +213,12 @@ var ModelView = (function () {
         enumerable: true,
         configurable: true
     });
+    ModelView.prototype.unbind = function () {
+        this.bindings = {};
+        this.properties.forEach(function (n) { return n.isUnbind = true; });
+        this._isUnbind = true;
+        this.subModels.forEach(function (subMd) { return subMd.unbind(); });
+    };
     ModelView.prototype.getAllDuetNodes = function (element) {
         if (!element)
             element = document;
@@ -222,28 +228,45 @@ var ModelView = (function () {
         for (var i = 0; i < dom.length; i++) {
             var domObj = dom[i];
             var domFound = false;
-            for (var j = 0; j < domObj.attributes.length && !domFound; j++) {
-                var attr = domObj.attributes[j];
-                if (attr.name.indexOf('dt') == 0 || attr.name.indexOf('dt') == 0 && attr.name != "dt-binding-generation") {
-                    var isSubElement = false;
-                    for (var k = 0; k < resParent.length && !isSubElement; k++) {
-                        isSubElement = resParent[k].contains(domObj);
+            if (domObj.attributes.hasOwnProperty("dt") || domObj.attributes.hasOwnProperty("data-dt")) {
+                if (domObj.attributes.hasOwnProperty("dt")) {
+                    validNode = domObj.attributes["dt"].value == this.modelName;
+                }
+                else if (domObj.attributes.hasOwnProperty("data-dt")) {
+                    validNode = domObj.attributes["data-dt"].value == this.modelName;
+                }
+            }
+            else
+                validNode = "duet.model" == this.modelName;
+            if (validNode) {
+                for (var j = 0; j < domObj.attributes.length && !domFound; j++) {
+                    var attr = domObj.attributes[j];
+                    var attrName = attr.name;
+                    var validNode = true;
+                    if (attr.name.indexOf('data-') == 0) {
+                        attrName = attr.name.slice(5);
                     }
-                    if (!isSubElement) {
-                        res.push(domObj);
-                        if (domObj.hasAttribute('dt-children') || domObj.hasAttribute('data-dt-children'))
-                            resParent.push(domObj);
+                    if (attrName.indexOf('dt') == 0 || attrName.indexOf('dt') == 0 && attrName != "dt-binding-generation") {
+                        var isSubElement = false;
+                        for (var k = 0; k < resParent.length && !isSubElement; k++) {
+                            isSubElement = resParent[k].contains(domObj);
+                        }
+                        if (!isSubElement) {
+                            res.push(domObj);
+                            if (domObj.hasAttribute('dt-children') || domObj.hasAttribute('data-dt-children'))
+                                resParent.push(domObj);
+                        }
+                        domFound = true;
                     }
-                    domFound = true;
                 }
             }
         }
         return res;
     };
     ModelView.prototype.createObservableObject = function (obj, parentName) {
-        var _this = this;
         if (typeof (obj) !== "object" || (obj && obj["mutated-observation"]))
             return;
+        var instance = this;
         var parentPropName = "";
         if (parentName)
             parentPropName = parentName;
@@ -263,8 +286,12 @@ var ModelView = (function () {
                 this.createObservableObject(obj[propertyName], propertyBindName);
                 this.bindings[propertyBindName] = result;
                 document.addEventListener(result.propertyChangeEvent, function (args) {
-                    if (!_this.isInitialization) {
-                        _this.checkBindDependencies(args);
+                    if (instance._isUnbind) {
+                        document.removeEventListener(result.propertyChangeEvent, arguments.callee, false);
+                        return;
+                    }
+                    if (!instance.isInitialization) {
+                        instance.checkBindDependencies(args);
                         if (obj["_parentReference"] && obj["_parentReference"]._binding) {
                             obj["_parentReference"]._binding.dispatchChangeEvent(args.detail.internalExpression);
                         }
@@ -332,7 +359,6 @@ var ModelView = (function () {
 })();
 var ModelProperty = (function () {
     function ModelProperty(modelView, component) {
-        var _this = this;
         this.modelView = modelView;
         this.component = component;
         this.componentBindings = {};
@@ -375,13 +401,18 @@ var ModelProperty = (function () {
                 var bindProperty = this.bindings[propName];
                 this.listenChangeEvents(propName, bindProperty);
             }
+            var instance = this;
             this.component.addEventListener("componentSync", function (e) {
                 if (e instanceof CustomEvent && e.detail instanceof ModelProperty) {
                     var mdProp = e.detail;
                     var comp = mdProp.component;
-                    var internalComponent = _this.component;
+                    if (mdProp.isUnbind) {
+                        mdProp.component.removeEventListener("componentSync", arguments.callee, false);
+                        return;
+                    }
+                    var internalComponent = instance.component;
                     for (var pendChange in mdProp.pendingSync) {
-                        var binding = _this.bindings[_this.componentBindings[pendChange]];
+                        var binding = instance.bindings[instance.componentBindings[pendChange]];
                         var propName = pendChange;
                         if (propName.indexOf('.') != -1) {
                             var internalProps = propName.split('.');
@@ -425,6 +456,25 @@ var ModelProperty = (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(ModelProperty.prototype, "template", {
+        get: function () {
+            return this._template;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ModelProperty.prototype, "isUnbind", {
+        get: function () {
+            return this._isUnbind;
+        },
+        set: function (value) {
+            if (this._observer && value)
+                this._observer.disconnect();
+            this._isUnbind = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(ModelProperty.prototype, "component", {
         get: function () {
             return this._component;
@@ -433,7 +483,7 @@ var ModelProperty = (function () {
             var _this = this;
             var instance = this;
             this._component = value;
-            var observer = new MutationObserver(function (mutations) {
+            this._observer = new MutationObserver(function (mutations) {
                 mutations.forEach(function (mutation) {
                     if (mutation.type === "childList") {
                         var childrenMap = _this._component.dataset["childrenmap"];
@@ -473,10 +523,25 @@ var ModelProperty = (function () {
                 _this.syncDependencies(instance);
             });
             var config = { attributes: true, childList: true, characterData: true };
-            observer.observe(this._component, config);
-            this._component.addEventListener("change", function () { return ModelProperty.syncComponentEvent(instance); }, false);
-            this._component.addEventListener("keydown", function () { return ModelProperty.syncComponentEvent(instance); }, false);
-            this._component.addEventListener("keyup", function () { return ModelProperty.syncComponentEvent(instance); }, false);
+            this._observer.observe(this._component, config);
+            this._component.addEventListener("change", function () {
+                if (instance.isUnbind)
+                    instance._component.removeEventListener("change", arguments.callee, false);
+                else
+                    ModelProperty.syncComponentEvent(instance);
+            }, false);
+            this._component.addEventListener("keydown", function () {
+                if (instance.isUnbind)
+                    instance._component.removeEventListener("keydown", arguments.callee, false);
+                else
+                    ModelProperty.syncComponentEvent(instance);
+            }, false);
+            this._component.addEventListener("keyup", function () {
+                if (instance.isUnbind)
+                    instance._component.removeEventListener("keyup", arguments.callee, false);
+                else
+                    ModelProperty.syncComponentEvent(instance);
+            }, false);
         },
         enumerable: true,
         configurable: true
@@ -497,8 +562,14 @@ var ModelProperty = (function () {
         }
     };
     ModelProperty.prototype.listenChangeEvents = function (propName, bindProperty) {
-        var _this = this;
-        document.addEventListener(bindProperty.propertyChangeEvent, function (e) { return _this.onBindingChange(e); }, false);
+        var instance = this;
+        document.addEventListener(bindProperty.propertyChangeEvent, function (e) {
+            if (instance.isUnbind) {
+                document.removeEventListener(bindProperty.propertyChangeEvent, arguments.callee, false);
+                return;
+            }
+            instance.onBindingChange(e);
+        }, false);
         var internalComponent = this.component;
         var propInternalName = propName;
         if (propInternalName.indexOf('.') != -1) {
@@ -514,21 +585,29 @@ var ModelProperty = (function () {
         this.bindings[propName].htmlComponent = internalComponent;
         if (this.bindings[propName].value instanceof ObservableArray) {
             document.addEventListener(propName + "elementAdded", function (e) {
+                if (instance.isUnbind) {
+                    document.removeEventListener(propName + "elementAdded", arguments.callee, false);
+                    return;
+                }
                 if (e.detail instanceof ObservableItem) {
-                    var prop = _this.getComponentBinding(e.detail.name);
-                    _this.bindingObservableItem(e.detail.name, e.detail.index, e.detail.item, prop);
+                    var prop = instance.getComponentBinding(e.detail.name);
+                    instance.bindingObservableItem(e.detail.name, e.detail.index, e.detail.item, prop);
                 }
             });
             document.addEventListener(propName + "elementRemoved", function (e) {
+                if (instance.isUnbind) {
+                    document.removeEventListener(propName + "elementRemoved", arguments.callee, false);
+                    return;
+                }
                 if (e.detail instanceof ObservableItem) {
-                    var prop = _this.getComponentBinding(e.detail.name);
+                    var prop = instance.getComponentBinding(e.detail.name);
                     if (prop != null) {
-                        _this.component[prop][e.detail.index].dataset["dtBindingGeneration"] = undefined;
-                        if (_this.component[prop][e.detail.index].remove) {
-                            _this.component[prop][e.detail.index].remove();
+                        instance.component[prop][e.detail.index].dataset["dtBindingGeneration"] = undefined;
+                        if (instance.component[prop][e.detail.index].remove) {
+                            instance.component[prop][e.detail.index].remove();
                         }
                         else {
-                            _this.component.removeChild(_this.component.children[e.detail.index]);
+                            instance.component.removeChild(instance.component.children[e.detail.index]);
                         }
                     }
                 }
@@ -1124,8 +1203,73 @@ var BindableProperty = (function () {
 var duet = (function () {
     function duet() {
     }
-    duet.bind = function (model) {
-        return new ModelView("virtualModel", model);
+    duet.bind = function (model, modelName) {
+        if (!duet.subModels)
+            duet.subModels = {};
+        if (!duet.subModelViews)
+            duet.subModelViews = {};
+        if (!modelName)
+            duet.model = model;
+        else {
+            duet.subModels[modelName] = model;
+        }
+        if (duet.readyComplete) {
+            if (modelName) {
+                if (duet.subModelViews[modelName]) {
+                    duet.subModelViews[modelName].unbind();
+                    duet.subModelViews[modelName] = undefined;
+                }
+                duet.subModelViews[modelName] = new ModelView(modelName, duet.subModels[modelName]);
+            }
+            else {
+                if (duet.modelView)
+                    duet.modelView.unbind();
+                duet.modelView = new ModelView("duet.model", duet.model);
+            }
+        }
+    };
+    duet.init = function () {
+        if (duet.readyBound)
+            return;
+        duet.readyBound = true;
+        if (window.document.addEventListener) {
+            window.document.addEventListener("DOMContentLoaded", function () {
+                window.document.removeEventListener("DOMContentLoaded", arguments.callee, false);
+                duet.ready();
+            }, false);
+        }
+        else if (window.document.attachEvent) {
+            window.document.attachEvent("onreadystatechange", function () {
+                if (window.document.readyState === "complete") {
+                    window.document.detachEvent("onreadystatechange", arguments.callee);
+                    duet.ready();
+                }
+            });
+            if (window.document.documentElement.doScroll && window == window.top)
+                (function () {
+                    if (duet.isReady)
+                        return;
+                    try {
+                        window.document.documentElement.doScroll("left");
+                    }
+                    catch (error) {
+                        setTimeout(arguments.callee, 0);
+                        return;
+                    }
+                    duet.ready();
+                })();
+        }
+        window.onload = duet.ready;
+    };
+    duet.ready = function () {
+        if (!duet.isReady) {
+            duet.isReady = true;
+            if (duet.model)
+                duet.modelView = new ModelView("duet.model", duet.model);
+            for (var model in duet.subModels)
+                duet.subModelViews[model] = new ModelView(model, duet.subModels[model]);
+            duet.readyComplete = true;
+        }
     };
     return duet;
 })();

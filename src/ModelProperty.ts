@@ -6,6 +6,8 @@ class ModelProperty<T> {
 	private _component: HTMLElement;
 	private _modelView: ModelView<T>;
 	private _template: HTMLElement;
+	private _isUnbind: boolean;
+	private _observer: MutationObserver;
 
 	internalBindings: IDictionary<BindableProperty>;
 	componentBindings: DOMStringMap;
@@ -29,6 +31,21 @@ class ModelProperty<T> {
 		this._modelView = value;
 	}
 
+	get template(): HTMLElement {
+		return this._template;
+	}
+
+	get isUnbind(): boolean {
+		return this._isUnbind;
+	}
+
+	set isUnbind(value: boolean) {
+		if(this._observer && value)
+			this._observer.disconnect();
+
+		this._isUnbind = value;
+	}
+
 	get component(): HTMLElement {
 		return this._component;
 	}
@@ -37,7 +54,7 @@ class ModelProperty<T> {
 		var instance: ModelProperty<T> = this;
 		this._component = value;
 
-		var observer = new MutationObserver((mutations) => {
+		this._observer = new MutationObserver((mutations) => {
 			mutations.forEach((mutation) => {
                 if(mutation.type === "childList"){
                     var childrenMap:string = this._component.dataset["childrenmap"];
@@ -85,11 +102,26 @@ class ModelProperty<T> {
 		});
 
 		var config = { attributes: true, childList: true, characterData: true };
-		observer.observe(this._component, config);
+		this._observer.observe(this._component, config);
 
-		this._component.addEventListener("change", () => ModelProperty.syncComponentEvent(instance), false);
-		this._component.addEventListener("keydown", () => ModelProperty.syncComponentEvent(instance), false);
-		this._component.addEventListener("keyup", () => ModelProperty.syncComponentEvent(instance), false);
+		this._component.addEventListener("change", function() {
+			if(instance.isUnbind)
+				instance._component.removeEventListener("change", <any>arguments.callee, false);
+			else
+				ModelProperty.syncComponentEvent(instance);
+		} , false);
+		this._component.addEventListener("keydown", function() {
+			if(instance.isUnbind)
+				instance._component.removeEventListener("keydown", <any>arguments.callee, false);
+			else
+				ModelProperty.syncComponentEvent(instance);
+		} , false);
+		this._component.addEventListener("keyup", function() {
+			if(instance.isUnbind)
+				instance._component.removeEventListener("keyup", <any>arguments.callee, false);
+			else
+				ModelProperty.syncComponentEvent(instance);
+		} , false);
 	}
 
 	constructor(modelView: ModelView<T>, component: HTMLElement) {
@@ -102,24 +134,6 @@ class ModelProperty<T> {
 		var binding = false;
 
 		this.createDatasetAttributes(this.component);
-
-		/*
-        for (var prop in this.component.attributes){
-            var attr = this.component.attributes[prop];
-            if(attr.name && attr.name.indexOf("dt") == 0) {
-            	var attrName = attr.name;
-				var iattrName = attrName.indexOf('-');
-
-            	while(iattrName != -1){
-            		attrName = attrName.replace(/-/, attrName[iattrName + 1].toUpperCase());
-            		attrName = attrName.slice(0, iattrName + 1) + attrName.slice(iattrName + 2	);
-					iattrName = attrName.indexOf('-');
-            	}
-
-                this.component.dataset[attrName] = attr.value;
-            }
-        }
-		*/
 
 		for (var name in this.component.dataset) {
 			if (this.component.dataset.hasOwnProperty(name) && (<string>name).indexOf("dt") == 0) {
@@ -167,18 +181,25 @@ class ModelProperty<T> {
 				this.listenChangeEvents(propName, bindProperty);
 			}
 
-			this.component.addEventListener("componentSync", (e: CustomEvent) => {
+			var instance = this;
+
+			this.component.addEventListener("componentSync", function(e: CustomEvent) {
 
 				if (e instanceof CustomEvent && e.detail instanceof ModelProperty) {
+
+
 					var mdProp = <ModelProperty<T>>e.detail;
 					var comp = mdProp.component;
 
-					var internalComponent = this.component;
+					if(mdProp.isUnbind) {
+						mdProp.component.removeEventListener("componentSync", <any>arguments.callee, false);
+						return;	
+					}
 
-
+					var internalComponent = instance.component;
 
 					for (var pendChange in mdProp.pendingSync) {
-						var binding = this.bindings[this.componentBindings[pendChange]];
+						var binding = instance.bindings[instance.componentBindings[pendChange]];
 						var propName = pendChange;
 
 						if (propName.indexOf('.') != -1) {
@@ -229,10 +250,17 @@ class ModelProperty<T> {
 	}
 
 	private listenChangeEvents(propName: string, bindProperty: BindableProperty): void {
-		document.addEventListener(bindProperty.propertyChangeEvent,
-			(e: CustomEvent) => this.onBindingChange(<CustomEvent>e), false);
+		var instance = this;
 
+		document.addEventListener(bindProperty.propertyChangeEvent, function(e: CustomEvent) {
+			if(instance.isUnbind) {
+				document.removeEventListener(bindProperty.propertyChangeEvent, <any>arguments.callee, false);
+				return;	
+			}
 
+			instance.onBindingChange(<CustomEvent>e) 
+		}, false);
+		
 		var internalComponent = this.component;
 		var propInternalName = propName;
 
@@ -252,26 +280,36 @@ class ModelProperty<T> {
 		this.bindings[propName].htmlComponent = internalComponent;
 
 		if (this.bindings[propName].value instanceof ObservableArray) {
-			document.addEventListener(propName + "elementAdded", (e: CustomEvent) => {
-				if (e.detail instanceof ObservableItem) {
-					var prop = this.getComponentBinding(e.detail.name);
+			document.addEventListener(propName + "elementAdded", function(e: CustomEvent) {
+				if(instance.isUnbind) {
+					document.removeEventListener(propName + "elementAdded", <any>arguments.callee, false);
+					return;	
+				}
 
-					this.bindingObservableItem(e.detail.name, e.detail.index, e.detail.item, prop);
+				if (e.detail instanceof ObservableItem) {
+					var prop = instance.getComponentBinding(e.detail.name);
+
+					instance.bindingObservableItem(e.detail.name, e.detail.index, e.detail.item, prop);
 				}
 			});
 
-			document.addEventListener(propName + "elementRemoved", (e: CustomEvent) => {
+			document.addEventListener(propName + "elementRemoved", function(e: CustomEvent) {
+				if(instance.isUnbind) {
+					document.removeEventListener(propName + "elementRemoved", <any>arguments.callee, false);
+					return;	
+				}
+
 				if (e.detail instanceof ObservableItem) {
-					var prop = this.getComponentBinding(e.detail.name);
+					var prop = instance.getComponentBinding(e.detail.name);
 
 					if (prop != null) {
-						this.component[prop][e.detail.index].dataset["dtBindingGeneration"] = undefined;
+						instance.component[prop][e.detail.index].dataset["dtBindingGeneration"] = undefined;
 
-						if (this.component[prop][e.detail.index].remove){
-							this.component[prop][e.detail.index].remove();
+						if (instance.component[prop][e.detail.index].remove){
+							instance.component[prop][e.detail.index].remove();
 						}
 						else{
-							this.component.removeChild(this.component.children[e.detail.index]);
+							instance.component.removeChild(instance.component.children[e.detail.index]);
 						}
 					}
 				}
@@ -295,7 +333,7 @@ class ModelProperty<T> {
 		}
 	}
 
- private bindingObservableItem(propName: string, index: number, item: any, bindName: string) {
+ 	private bindingObservableItem(propName: string, index: number, item: any, bindName: string) {
     	if (!this.bindings[propName] || this._template == undefined)
         	return
 
@@ -484,21 +522,6 @@ class ModelProperty<T> {
 	}
     
     addChildrenListNode(childList: Array<any>, childNode: HTMLElement, template: HTMLElement): void {
-        /*
-        var templateDtElements = new Array<Element>();
-        
-        var totalDocElements = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'],[dt='children']"));
-        var exclude = Array.prototype.slice.call(template.querySelectorAll("[data-dt='children'] [data-dt='children'],[dt='children'] [dt='children']"));
-
-        if (totalDocElements.length !== exclude.length) {
-            for (var k = 0; k < totalDocElements.length; k++)
-                if (exclude.indexOf(totalDocElements[k]) === -1)
-                    templateDtElements.push(totalDocElements[k]);
-
-        }
-        else
-            templateDtElements = totalDocElements;
-        */
 
         var templateDtElements: Array<Element>  = this._modelView.getAllDuetNodes(template);
         
@@ -530,7 +553,7 @@ class ModelProperty<T> {
         
         childList.push(newModel);
     }
-    
+
     private mapTemplateNode(newModel: any, tplElem: HTMLElement, nodElem: HTMLElement): void {
         for (var name in tplElem.dataset) {
             if (tplElem.dataset.hasOwnProperty(name) && (<string>name).indexOf("dt") == 0) {
