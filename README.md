@@ -35,12 +35,19 @@ La vista es la representación gráfica de la información que se desea mostrar,
 ### Modelo ###
 El modelo contiene tanto la información a mostrar como el comportamiento de la vista asociada. Esta formado por variables JSON y funciones javascripts sin ningún tipo de añadidos:
 
-	<script>duet.bind({ message: 'Hola Mundo' });</script>
+	<script>
+		duet.bind({ message: 'Hola Mundo' });
+		duet.init();
+	</script>
 
 ### Bindings ###
 Ahora que tenemos por un lado la vista y por otro el modelo es necesario introducir el pegamento que enlace estos dos componentes y en este punto es donde entra en juego los **duet-bindings** (`data-dt`) donde se especifica que modelo se enlaza a cada elemento de la vista:
-
-	<body onload="duet.bind({ message: 'Hola Mundo' });">
+		
+	<script>
+		duet.bind({ message: 'Hola Mundo' });
+		duet.init();
+	</script>
+	<body>
 		<span dt-innerHTML="message"></span> 
 	</body>
 
@@ -51,16 +58,15 @@ Existen dos tipos de **duet-annotations**:
 Una **property binding** es un enlace directo entre la vista y el modelo, es decir, se corresponde con el nombre de una propiedad o método del componente del modelo al que se asocia.
 
 	<script>
-		function onLoad(){
-			var btTest = {
-				name: 'Click me!',
-				clickEvent: function(){ alert('Hello world!'); }
-			};
+		var btTest = {
+			name: 'Click me!',
+			clickEvent: function(){ alert('Hello world!'); }
+		};
 
-			duet.bind(btTest);
-		}
+		duet.bind(btTest);
+		duet.init();		
 	</script>
-	<body onload="onLoad();">
+	<body>
 		<input type="button" dt-value="name" dt-onclick="clickEvent">
 	</body>
 
@@ -68,7 +74,11 @@ Una **property binding** es un enlace directo entre la vista y el modelo, es dec
 #### Inline binding ####
 Las **inline binding** se expresan directamente en los atributos de las etiquetas empezando por **`#`** para los atributos normales y **`@`** para los eventos mediante código javascript. Estas propiedades soportan expresiones lambdas de forma independiente al motor javascript del navegador.
 
-	<body onload="duet.bind({ name: 'Click me' });">
+	<script>
+		duet.bind({ name: 'Click me' });
+		duet.init();
+	</script>
+	<body>
 		<input type="button" dt-value="#this.name + '!'" 
 			dt-onclick="@alert('Hello world!');">
 	</body>
@@ -88,21 +98,20 @@ Algunos de los atributos de los componentes HTML son diccionarios de tipo clave-
 
 	
 		
-	<script>
-		function onLoad(){
-			var btTest = {
-				name: 'Click me!',
-				fontWeight: 'normal',
-				clickEvent: function(){ 
-					this.fontWeight = 'bold';
-					alert('Hello world!');
-				}
-			};
+	<script>		
+		var btTest = {
+			name: 'Click me!',
+			fontWeight: 'normal',
+			clickEvent: function(){ 
+				this.fontWeight = 'bold';
+				alert('Hello world!');
+			}
+		};
 
-			duet.bind(btTest);
-		}
+		duet.bind(btTest);
+		duet.init();		
 	</script>
-	<body onload="onLoad();">
+	<body>
 		<input type="button" dt-value="name" dt-onclick="clickEvent" 			
 			dt-style.font-weight="fontWeight">	
 		<input type="button" dt-value="#this.name + '!'" 
@@ -114,20 +123,19 @@ Algunos de los atributos de los componentes HTML son diccionarios de tipo clave-
 #### Atributo Children ####
 El atributo `dt-children` se utiliza para trabajar con colecciones de forma que se renderiza una lista de elementos HTML, de esta forma de puede generar contenido dinámico trabajando con una plantilla totalmente HTML estandar.
 
-	<script>
-		function onLoad(){
-			var btTest = {
-				name: 'Click me!',
-				tasks: ['Task1','Task2','Task3'],
-				clickEvent: function(){ 
-					this.tasks.push('New task');
-				}
-			};
+	<script>		
+		var btTest = {
+			name: 'Click me!',
+			tasks: ['Task1','Task2','Task3'],
+			clickEvent: function(){ 
+				this.tasks.push('New task');
+			}
+		};
 
-			duet.bind(btTest);
-		}
+		duet.bind(btTest);
+		duet.init();
 	</script>
-	<body onload="onDocLoad();">
+	<body>
 		<input type="button" dt-value="name" dt-onclick="clickEvent" dt-style.font-weight="fontWeight">
 	                
 	    <ul dt-children="tasks">
@@ -140,19 +148,19 @@ El atributo `dt-children` se utiliza para trabajar con colecciones de forma que 
 Como se puede comprobar para los tipos primitivos se utiliza la palabra reservada `this`, en el caso de enlazar colecciones de objetos se utilizaría la nomenclatura normal que hemos comentado más arriba:
 
 	<script>
-		function onLoad(){
-			var btTest = {
-				name: 'Click me!',
-				doneTasks: [ {index:1, name:'Task11'}, {index:2, name:'Task22'}, {index:3, name:'Task33'}],
-				clickEvent: function(){ 
-					this.tasks.push({index:4, name:'New task'});
-				}
-			};
+		var btTest = {
+			name: 'Click me!',
+			doneTasks: [ {index:1, name:'Task11'}, {index:2, name:'Task22'}, 
+				{index:3, name:'Task33'}],
+			clickEvent: function(){ 
+				this.tasks.push({index:4, name:'New task'});
+			}
+		};
 
-			duet.bind(btTest);
-		}
+		duet.bind(btTest);
+		duet.init();
 	</script>
-	<body onload="onDocLoad();">
+	<body>
 		<ul dt-children="doneTasks">
 			<li>
 			    <span dt-innerHTML="index"></span> - <span dt-innerHTML="name"></span> 
