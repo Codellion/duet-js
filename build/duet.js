@@ -555,7 +555,7 @@ var ModelProperty = (function () {
     ModelProperty.prototype.createDatasetAttributes = function (element) {
         for (var prop in element.attributes) {
             var attr = element.attributes[prop];
-            if (attr.name) {
+            if (attr != null && attr.name) {
                 if (attr.name.indexOf("dt") == 0) {
                     var attrName = attr.name;
                     var iattrName = attrName.indexOf('-');
@@ -1183,6 +1183,9 @@ var BindableProperty = (function () {
         this.propertyChange = new CustomEvent(this.propertyChangeEvent, { detail: this });
         document.dispatchEvent(this.propertyChange);
     };
+    BindableProperty.prototype.subscribe = function (callback) {
+        document.addEventListener(this.propertyChangeEvent, callback);
+    };
     BindableProperty.prototype.originalObject = function (value) {
         var ori = null;
         if (Array.isArray(value) || value instanceof ObservableArray)
@@ -1246,7 +1249,9 @@ var duet = (function () {
             }
         }
     };
-    duet.init = function () {
+    duet.init = function (callback) {
+        if (callback)
+            duet.initCallback = callback;
         if (duet.readyBound)
             return;
         duet.readyBound = true;
@@ -1287,6 +1292,8 @@ var duet = (function () {
             for (var model in duet.subModels)
                 duet.subModelViews[model] = new ModelView(model, duet.subModels[model]);
             duet.readyComplete = true;
+            if (duet.initCallback)
+                duet.initCallback();
         }
     };
     return duet;

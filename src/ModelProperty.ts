@@ -239,7 +239,7 @@ class ModelProperty<T> {
 	private createDatasetAttributes(element: HTMLElement) :void {
 		for (var prop in element.attributes){
             var attr = element.attributes[prop];
-            if(attr.name) {
+            if(attr != null && attr.name) {
 				if(attr.name.indexOf("dt") == 0) {
 	            	var attrName = attr.name;
 					var iattrName = attrName.indexOf('-');

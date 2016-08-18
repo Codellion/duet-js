@@ -10,6 +10,7 @@ class duet {
 	private static readyBound: boolean;
 	private static isReady: boolean;
 	private static readyComplete: boolean;
+	private static initCallback: Function;
 
 	static bind(model: any, modelName?: string): void {
 		if(!duet.subModels)
@@ -41,7 +42,10 @@ class duet {
 
 	}
 
-	static init(): void {
+	static init(callback? : Function): void {
+		if(callback)
+			duet.initCallback = callback;
+
 	    if (duet.readyBound) return;
 	    duet.readyBound = true;
 
@@ -98,6 +102,9 @@ class duet {
 				duet.subModelViews[model] = new ModelView(model, duet.subModels[model]);
 
 			duet.readyComplete = true;
+
+			if(duet.initCallback)
+				duet.initCallback();
 		}
 	}
 }

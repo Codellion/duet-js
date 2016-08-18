@@ -263,6 +263,10 @@ class BindableProperty {
 		document.dispatchEvent(this.propertyChange);
 	}
 
+	subscribe(callback: Function): void {
+		document.addEventListener(this.propertyChangeEvent, <any>callback);
+	}
+
 	private originalObject(value: any): any {
 		var ori: any = null;
 

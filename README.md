@@ -79,6 +79,8 @@ Una vez que se ha realizado la inicialización de duetJS mediante el evento `ini
         <input type="button" value="Actualizar modelo" dt="submodel" dt-onclick="@this.newModel()" />
 	</body>
 
+El evento `init` puede recibir como parámetro una función callback que será invocada a la finalización del inicio de duetJS.
+
 
 ### Bindings ###
 Ahora que tenemos por un lado la vista y por otro el modelo es necesario introducir el pegamento que enlace estos dos componentes y en este punto es donde entra en juego los **duet-bindings** (`data-dt`) donde se especifica que modelo se enlaza a cada elemento de la vista:
@@ -248,13 +250,38 @@ Es muy importante que la estructura que incluyamos como hija tenga los mismos co
 data-dt-value="chosenTicket"
 this.$chosenTicket.price
 
-Plantillas
+#### bindings y subscripciones a cambios en el modelo
+	var model = {
+		"title": "Prueba REST",
+		"result": "Pendiente",
+		"results": [],
+		"address": "San Francisco",
+		"feechResults": function() {
+			var _self = this;
+			this.result = "En progreso",
+			$.ajax({
+		        url: "http://maps.googleapis.com/maps/api/geocode/json?address=" + this.address
+		    }).then(function(data) {
+		    	_self.result = data.status;
+		       	_self.results = data.results;
+		    });
+		}
+	};
 
-Defered - autodefered
+	duet.bind(model);
+	duet.init(function() {
+		model.feechResults();
 
-Config
+		duet.model._address.subscribe(function(){
+	    	alert('Puto amo');
+		});
+	});
 
-observablearray
+#### Plantillas
+
+#### Defered - autodefered
+
+#### ObservableArray
 
 
 
