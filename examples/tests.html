@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Title of the document</title>
+<script src="../build/duet.js"></script>
+<script type="text/javascript">
+function addCity(){
+        	var newOpt = document.createElement('option');
+            newOpt.text = "Londres";
+            newOpt.value = "Londres";
+            document.querySelector('#selectCities').appendChild(newOpt);
+        }
+	duet.bind({ cities: ['Sevilla', 'Roma', 'Paris'] });
+	duet.init();
+</script>
+</head>
+	<body>
+		<select id="selectCities" data-childrenMap="cities" dt-children="cities">
+			<option dt-text="this"></option>
+		</select>
+		<input type="button" value="Añadir ciudad" onclick="addCity()" />
+	</body>
+
+</html>

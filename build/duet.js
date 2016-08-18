@@ -789,7 +789,8 @@ var ModelProperty = (function () {
         var nodeElements = childNode.querySelectorAll("*");
         var templateElements = template.querySelectorAll('*');
         var newModel = {};
-        this.mapTemplateNode(newModel, template, childNode);
+        var primModel = null;
+        primModel = this.mapTemplateNode(newModel, template, childNode);
         for (var i = 0; i < templateElements.length; i++) {
             if (nodeElements.length < i)
                 break;
@@ -799,10 +800,12 @@ var ModelProperty = (function () {
                 if (_tplElem instanceof HTMLElement && _nodElem instanceof HTMLElement) {
                     var tplElem = _tplElem;
                     var nodElem = _nodElem;
-                    this.mapTemplateNode(newModel, tplElem, nodElem);
+                    primModel = this.mapTemplateNode(newModel, tplElem, nodElem);
                 }
             }
         }
+        if (primModel != null)
+            newModel = primModel;
         childList.push(newModel);
     };
     ModelProperty.prototype.mapTemplateNode = function (newModel, tplElem, nodElem) {
@@ -826,11 +829,15 @@ var ModelProperty = (function () {
                     }
                     else if (bindValue.indexOf('#') === -1 && bindValue.indexOf('@') === -1
                         && nodElem[bindName]) {
-                        newModel[bindValue] = nodElem[bindName];
+                        if (bindValue != "this")
+                            newModel[bindValue] = nodElem[bindName];
+                        else
+                            return nodElem[bindName];
                     }
                 }
             }
         }
+        return null;
     };
     ModelProperty.createAccesorProperty = function (propertyName, source, property) {
         if (Array.isArray(source) || source instanceof ObservableArray || typeof (source) !== 'object')

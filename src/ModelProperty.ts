@@ -533,8 +533,9 @@ class ModelProperty<T> {
         var nodeElements: NodeListOf<Element> = childNode.querySelectorAll("*");
         var templateElements: NodeListOf<Element> = template.querySelectorAll('*');
         var newModel = {};
+        var primModel = null;
         
-        this.mapTemplateNode(newModel, template, childNode);
+        primModel = this.mapTemplateNode(newModel, template, childNode);
      
         for(var i=0; i < templateElements.length; i++) {
             
@@ -551,15 +552,18 @@ class ModelProperty<T> {
                     var tplElem = <HTMLElement> _tplElem;
                     var nodElem = <HTMLElement> _nodElem;
 
-                    this.mapTemplateNode(newModel, tplElem, nodElem);
+                    primModel = this.mapTemplateNode(newModel, tplElem, nodElem);
                 }
             }
         }     
         
+        if(primModel != null)
+        	newModel = primModel;
+
         childList.push(newModel);
     }
 
-    private mapTemplateNode(newModel: any, tplElem: HTMLElement, nodElem: HTMLElement): void {
+    private mapTemplateNode(newModel: any, tplElem: HTMLElement, nodElem: HTMLElement): any {
         for (var name in tplElem.dataset) {
             if (tplElem.dataset.hasOwnProperty(name) && (<string>name).indexOf("dt") == 0) {
                 if (name.length > 2) {
@@ -586,11 +590,16 @@ class ModelProperty<T> {
                     else  if (bindValue.indexOf('#') === -1 && bindValue.indexOf('@') === -1 
                         && nodElem[bindName])
                     {
-                        newModel[bindValue] = nodElem[bindName];                      
+                    	if(bindValue != "this")
+                        	newModel[bindValue] = nodElem[bindName];                      
+                        else
+                        	return nodElem[bindName];
                     }
                 }
             }
         }
+
+        return null;
     }
 
 	static createAccesorProperty(propertyName: string, source: Object, property: BindableProperty): void {
