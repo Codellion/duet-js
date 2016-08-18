@@ -6,31 +6,29 @@
 <script src="../build/duet.js"></script>
 <script type="text/javascript">
 
-	function onDocLoad() {
-				
-		var model = {
-		    tickets:[
-		      {name: 'Economy', price: 199.95},
-		      {name: 'Business', price: 449.22},
-		      {name: 'First Class', price: 1199.98}
-		    ],
-		    chosenTicket: null,
-		    resetTicket: (function(){
-		      this.chosenTicket = null;
-		    }),
-		    selectTicket: (function(){      
-		    	if(this.$chosenTicket != null)
-		      		return this.$chosenTicket.price;
-		    }),
-		  };
+	var model = {
+	    tickets:[
+	      {name: 'Economy', price: 199.95},
+	      {name: 'Business', price: 449.22},
+	      {name: 'First Class', price: 1199.98}
+	    ],
+	    chosenTicket: null,
+	    resetTicket: (function(){
+	      this.chosenTicket = null;
+	    }),
+	    selectTicket: (function(){      
+	    	if(this.$chosenTicket != null)
+	      		return this.$chosenTicket.price;
+	    }),
+	  };
 
-		ko = duet.bind(model);
-	}
+	duet.bind(model);
+	duet.init();
 	
 </script>
 </head>
 
-<body onload="onDocLoad();">
+<body>
 	<div>
 	  <select dt-children="tickets" dt-value="chosenTicket">
 	    <option dt-text="name" dt-value="name" />    

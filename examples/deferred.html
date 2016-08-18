@@ -6,38 +6,37 @@
 <script src="../build/duet.js"></script>
 <script type="text/javascript">
 
-	function onDocLoad() {
-		function AppViewModel(type) {
-		    this.type = type;
-		    this.data = [
-		        { name: 'Alfred', position: 'Butler', location: 'London' },
-		        { name: 'Bruce', position: 'Chairman', location: 'New York' }
-		    ];
-		    this.flipData = function () {
-		        var starttime = new Date().getTime();
-		        if(type === "deferred")
-		        	this._data.ignore = true;
+	function AppViewModel(type) {
+	    this.type = type;
+	    this.data = [
+	        { name: 'Alfred', position: 'Butler', location: 'London' },
+	        { name: 'Bruce', position: 'Chairman', location: 'New York' }
+	    ];
+	    this.flipData = function () {
+	        var starttime = new Date().getTime();
+	        if(type === "deferred")
+	        	this._data.ignore = true;
 
-		        for (var i = 0; i < 499999; i++) {
-		            this.data = this.data.reverse();
-		        }
+	        for (var i = 0; i < 499999; i++) {
+	            this.data = this.data.reverse();
+	        }
 
-		        if(type === "deferred"){
-			        this._data.ignore = false;
-		        }
-		        
-		        this.timing = (new Date().getTime() - starttime) + ' ms';
-		    }
-		    this.timing = '';
-		}
-
-		view = duet.bind({ examples: [new AppViewModel("deferred"), new AppViewModel("standard")] });
+	        if(type === "deferred"){
+		        this._data.ignore = false;
+	        }
+	        
+	        this.timing = (new Date().getTime() - starttime) + ' ms';
+	    }
+	    this.timing = '';
 	}
+
+	duet.bind({ examples: [new AppViewModel("deferred"), new AppViewModel("standard")] });
+	duet.init();
 
 </script>
 </head>
 
-<body onload="onDocLoad();">
+<body>
 	<div dt-children="examples">
 		<div>
 		    <table>

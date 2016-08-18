@@ -5,7 +5,7 @@
 <title>Title of the document</title>
 <script src="../build/duet.js"></script>
 <script type="text/javascript">
-function addCity(){
+	function addCity(){
         	var newOpt = document.createElement('option');
             newOpt.text = "Londres";
             newOpt.value = "Londres";
@@ -16,7 +16,7 @@ function addCity(){
 </script>
 </head>
 	<body>
-		<select id="selectCities" data-childrenMap="cities" dt-children="cities">
+		<select id="selectCities" children-map="cities" dt-children="cities">
 			<option dt-text="this"></option>
 		</select>
 		<input type="button" value="Añadir ciudad" onclick="addCity()" />

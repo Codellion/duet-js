@@ -211,8 +211,8 @@ Como se puede comprobar para los tipos primitivos se utiliza la palabra reservad
 	</body>
 
 
-#### Atributo childrenMap ####
-Como ya hemos comentado duetJS es un MVVM lo que quiere decir que soporta un enlace bidireccional entre el modelo y la vista. Este enlace también nos permite gestionar las listas de elementos que tengamos en nuestros modelos a través del atributo `childrenMap` que suele ir acompañando al atributo anterior `dt-children` para permitir la recreación de elementos a partir de los nodos hijos de un componente HTML.
+#### Atributo children-map ####
+Como ya hemos comentado duetJS es un MVVM lo que quiere decir que soporta un enlace bidireccional entre el modelo y la vista. Este enlace también nos permite gestionar las listas de elementos que tengamos en nuestros modelos a través del atributo `children-map` que suele ir acompañando al atributo anterior `dt-children` para permitir la recreación de elementos a partir de los nodos hijos de un componente HTML.
 
 La necesidad de utilizar este nuevo atributo en lugar de reutilizar el `dt-children` es debido a que este último permite incluir expresiones lambdas y código javascript incrustado por lo que no seríamos capaces de establecer a que propiedad del modelo hay que incluir los elementos modificados.
 
@@ -230,7 +230,7 @@ De este modo si incluimos esta etiqueta conseguimos que nuestra propiedad de tip
         duet.init();
     </script>
 	<body>
-		<select id="selectCities" data-childrenMap="cities" dt-children="cities">
+		<select id="selectCities" children-map="cities" dt-children="cities">
 			<option dt-text="this"></option>
 		</select>
         <input type="button" value="Añadir ciudad" onclick="addCity()" />

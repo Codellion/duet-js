@@ -6,30 +6,29 @@
 <script src="../build/duet.js"></script>
 <script type="text/javascript">
 
-	function onDocLoad() {
-		var model = {
-			  stringValue: "Hello",
-			  passwordValue: "mypass",
-			  booleanValue: true,
-			  optionValues: [{name:"Alpha"}, {name:"Beta"}, {name:"Gamma"}],
-			  selectedOptionValue: "Gamma",
-			  multipleSelectedOptionValues: ["Alpha", "Gamma"],
-			  radioSelectedOptionValue: "Beta",
-			  isRadioSelect: (function(){
-			  	return this.radioSelectedOptionValue == this.view.value;
-			  }),
-			  changeRadioSelect: (function(){  	
-			  	this.radioSelectedOptionValue = this.view.value;
-			  })
-			};
+	var model = {
+		  stringValue: "Hello",
+		  passwordValue: "mypass",
+		  booleanValue: true,
+		  optionValues: [{name:"Alpha"}, {name:"Beta"}, {name:"Gamma"}],
+		  selectedOptionValue: "Gamma",
+		  multipleSelectedOptionValues: ["Alpha", "Gamma"],
+		  radioSelectedOptionValue: "Beta",
+		  isRadioSelect: (function(){
+		  	return this.radioSelectedOptionValue == this.view.value;
+		  }),
+		  changeRadioSelect: (function(){  	
+		  	this.radioSelectedOptionValue = this.view.value;
+		  })
+		};
 
-		view = duet.bind(model);
-	}
+	duet.bind(model);
+	duet.init();
 	
 </script>
 </head>
 
-<body onload="onDocLoad();">
+<body>
 	<h3>What's in the model?</h3>
 	  <table>
 	    <tr>

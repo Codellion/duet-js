@@ -5,21 +5,19 @@
 <title>TDD Example</title>
 <script src="../../build/duet.js"></script>
 <script type="text/javascript">
-	var tabla = null;
 
-	window.onload = (function(){
-		var model = {
-			newRow: {name:'', surName:''},
-			rows: [],
-			addNewRow: (function(){
-				this.rows.push({name:this.newRow.name, surName:this.newRow.surName});
-				this.newRow.name = '';
-				this.newRow.surName = '';
-			})
-		};
+	var model = {
+		newRow: {name:'', surName:''},
+		rows: [],
+		addNewRow: (function(){
+			this.rows.push({name:this.newRow.name, surName:this.newRow.surName});
+			this.newRow.name = '';
+			this.newRow.surName = '';
+		})
+	};
 
-		table = duet.bind("table", model);
-	});
+	duet.bind(model);
+	duet.init();
 
 </script>
 </head>
@@ -27,9 +25,9 @@
 <body>
 	<div>
 		<p>Data:</p>
-		<input type="text" data-dt="table" dt-value="newRow.name" />
-		<input type="text" data-dt="table" dt-value="newRow.surName" />
-		<input type="button" data-dt="table" value="Add"  dt-onclick="addNewRow" />
+		<input type="text" dt-value="newRow.name" />
+		<input type="text" dt-value="newRow.surName" />
+		<input type="button" value="Add"  dt-onclick="addNewRow" />
 
 		<p>Table:</p>
 		<table>
@@ -39,7 +37,7 @@
 					<td>Surname</td>
 				</tr>
 			</thead>
-			<tbody data-dt="table" dt-children="rows">
+			<tbody dt-children="rows">
 				<tr>
 					<td><span  dt-innerHTML="name" /></td>
 					<td><span  dt-innerHTML="surName" /></td>

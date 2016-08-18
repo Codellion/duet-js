@@ -7,32 +7,30 @@
 <script src="ticket.js"></script>
 <script type="text/javascript">
 
-	function onDocLoad() {
-				
-		var model = {
-		    tickets:[
-		      new Ticket('LowCost', 69.95),
-		      new Ticket('Economy', 199.95),
-		      new Ticket('Business', 449.22),
-		      new Ticket('First Class', 1199.98)
-		    ],
-		    chosenTicket: null,
-		    resetTicket: (function(){
-		      this.chosenTicket = null;
-		    }),
-		    selectTicket: (function(){      
-		    	if(this.$chosenTicket != null)
-		      		return this.$chosenTicket.price;
-		    }),
-		  };
+	var model = {
+	    tickets:[
+	      new Ticket('LowCost', 69.95),
+	      new Ticket('Economy', 199.95),
+	      new Ticket('Business', 449.22),
+	      new Ticket('First Class', 1199.98)
+	    ],
+	    chosenTicket: null,
+	    resetTicket: (function(){
+	      this.chosenTicket = null;
+	    }),
+	    selectTicket: (function(){      
+	    	if(this.$chosenTicket != null)
+	      		return this.$chosenTicket.price;
+	    }),
+	  };
 
-		ko = duet.bind(model);
-	}
+	duet.bind(model);
+	duet.init();	
 	
 </script>
 </head>
 
-<body onload="onDocLoad();">
+<body>
 	<form>
 	  <select dt-children="tickets" dt-value="chosenTicket">
 	    <option dt-text="#this.printme()" dt-value="name" />    

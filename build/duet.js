@@ -492,7 +492,7 @@ var ModelProperty = (function () {
             this._observer = new MutationObserver(function (mutations) {
                 mutations.forEach(function (mutation) {
                     if (mutation.type === "childList") {
-                        var childrenMap = _this._component.dataset["childrenmap"];
+                        var childrenMap = _this._component.dataset["childrenMap"];
                         if (_this.modelView.isInitialization)
                             return;
                         if (childrenMap && _this._template) {
@@ -555,15 +555,20 @@ var ModelProperty = (function () {
     ModelProperty.prototype.createDatasetAttributes = function (element) {
         for (var prop in element.attributes) {
             var attr = element.attributes[prop];
-            if (attr.name && attr.name.indexOf("dt") == 0) {
-                var attrName = attr.name;
-                var iattrName = attrName.indexOf('-');
-                while (iattrName != -1) {
-                    attrName = attrName.replace(/-/, attrName[iattrName + 1].toUpperCase());
-                    attrName = attrName.slice(0, iattrName + 1) + attrName.slice(iattrName + 2);
-                    iattrName = attrName.indexOf('-');
+            if (attr.name) {
+                if (attr.name.indexOf("dt") == 0) {
+                    var attrName = attr.name;
+                    var iattrName = attrName.indexOf('-');
+                    while (iattrName != -1) {
+                        attrName = attrName.replace(/-/, attrName[iattrName + 1].toUpperCase());
+                        attrName = attrName.slice(0, iattrName + 1) + attrName.slice(iattrName + 2);
+                        iattrName = attrName.indexOf('-');
+                    }
+                    element.dataset[attrName] = attr.value;
                 }
-                element.dataset[attrName] = attr.value;
+                else if (attr.name == "children-map") {
+                    element.dataset["childrenMap"] = attr.value;
+                }
             }
         }
     };
@@ -816,7 +821,7 @@ var ModelProperty = (function () {
                     var bindValue = tplElem.dataset[name].trim();
                     bindName = bindName.replace("html", "HTML");
                     if (bindName === "children" && nodElem[bindName]) {
-                        var childrenMap = tplElem.dataset["childrenmap"];
+                        var childrenMap = tplElem.dataset["childrenMap"];
                         if (!newModel[childrenMap]) {
                             newModel[childrenMap] = [];
                             for (var i = 0; i < nodElem[bindName].length; i++) {

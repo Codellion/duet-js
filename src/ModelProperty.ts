@@ -57,7 +57,7 @@ class ModelProperty<T> {
 		this._observer = new MutationObserver((mutations) => {
 			mutations.forEach((mutation) => {
                 if(mutation.type === "childList"){
-                    var childrenMap:string = this._component.dataset["childrenmap"];
+                    var childrenMap:string = this._component.dataset["childrenMap"];
             
                     if(this.modelView.isInitialization)
                         return;
@@ -239,17 +239,21 @@ class ModelProperty<T> {
 	private createDatasetAttributes(element: HTMLElement) :void {
 		for (var prop in element.attributes){
             var attr = element.attributes[prop];
-            if(attr.name && attr.name.indexOf("dt") == 0) {
-            	var attrName = attr.name;
-				var iattrName = attrName.indexOf('-');
+            if(attr.name) {
+				if(attr.name.indexOf("dt") == 0) {
+	            	var attrName = attr.name;
+					var iattrName = attrName.indexOf('-');
 
-            	while(iattrName != -1){
-            		attrName = attrName.replace(/-/, attrName[iattrName + 1].toUpperCase());
-            		attrName = attrName.slice(0, iattrName + 1) + attrName.slice(iattrName + 2	);
-					iattrName = attrName.indexOf('-');
-            	}
+	            	while(iattrName != -1){
+	            		attrName = attrName.replace(/-/, attrName[iattrName + 1].toUpperCase());
+	            		attrName = attrName.slice(0, iattrName + 1) + attrName.slice(iattrName + 2	);
+						iattrName = attrName.indexOf('-');
+	            	}
 
-                element.dataset[attrName] = attr.value;
+	                element.dataset[attrName] = attr.value;
+	            } else if(attr.name == "children-map") {
+					element.dataset["childrenMap"] = attr.value;
+	            }
             }
         }
 	}
@@ -573,7 +577,7 @@ class ModelProperty<T> {
                     bindName = bindName.replace("html", "HTML");
 
                     if(bindName === "children" && nodElem[bindName]) {
-                        var childrenMap:string = tplElem.dataset["childrenmap"]
+                        var childrenMap:string = tplElem.dataset["childrenMap"]
                         
                         if(!newModel[childrenMap]){
                             newModel[childrenMap] = [];
