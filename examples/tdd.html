@@ -13,8 +13,8 @@
 		showArchiveTasks: true,
 		tasks: [],		
 		selectTask: (function() {
-			this.model.task = scope.description;
-	        this.model.selectedTask = scope;
+			this.model.task = this.description;
+	        this.model.selectedTask = this;
 	        this.model.isSelectTask = true;
 		}),
 		cleanTask: (function(){
@@ -26,7 +26,7 @@
 			if(this.isSelectTask)
 				this.selectedTask.description = this.model.task;
 			else
-				this.tasks.push({ done: false, description: this.model.task, subTasks: [] });
+				this.tasks.push({ done: false, description: this.model.task, subTasks: [], selectTask: this.selectTask });
 
 			this.cleanTask();
 		}),
@@ -65,7 +65,7 @@
 			<il>
 				<input type="checkbox"  dt-checked="done" />				
 				<span  dt-innerHTML="description" dt-style.text-decoration="#this.done? 'line-through': ''"
-					 dt-onclick="@selectTask()"  onmouseover="" style="cursor: pointer;"></span>
+					 dt-onclick="@this.selectTask()"  onmouseover="" style="cursor: pointer;"></span>
 				<br />
                 <ul  data-childrenMap="subTasks" dt-children="subTasks">
                     <il>
