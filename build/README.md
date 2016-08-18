@@ -256,24 +256,38 @@ this.$chosenTicket.price
 		"result": "Pendiente",
 		"results": [],
 		"address": "San Francisco",
+		"loading": "none",
 		"feechResults": function() {
-			var _self = this;
-			this.result = "En progreso",
-			$.ajax({
-		        url: "http://maps.googleapis.com/maps/api/geocode/json?address=" + this.address
-		    }).then(function(data) {
-		    	_self.result = data.status;
-		       	_self.results = data.results;
-		    });
+			if(this.address && this.address != "") {
+				var _self = this;
+
+				this.loading = "block";
+				this.result = "En progreso";
+
+				$.ajax({
+			        url: "http://maps.googleapis.com/maps/api/geocode/json?address=" + this.address
+			    }).then(function(data) {
+
+			    	_self.result = data.status;
+			       	_self.results = data.results;
+					_self.loading = "none";
+			    });
+			}
+			else {
+				this.result = "Pendiente";
+				this.results = [];
+			}
 		}
 	};
 
 	duet.bind(model);
 	duet.init(function() {
-		model.feechResults();
-
+		//Carga inicial
+		duet.model.feechResults();
+		
+		//Susbcripcion al evento de cambios en el propiedad "address" del modelo
 		duet.model._address.subscribe(function(){
-	    	alert('Puto amo');
+	    	duet.model.feechResults();
 		});
 	});
 

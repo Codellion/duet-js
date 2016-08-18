@@ -1,6 +1,6 @@
 {
   "name": "duet-js",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Duet JS is a javascript framework MVVM Typescript written. Its function is to simplify the interaction between UI and data, providing dynamism to the attributes of HTML without reinventing the wheel, which allows a quick learning curve.",
   "main": "duet.js",
   "scripts": {
