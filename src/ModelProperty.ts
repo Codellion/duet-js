@@ -164,6 +164,11 @@ class ModelProperty<T> {
 					this._template = <HTMLElement>node;
 				}
 
+				var allTPElem = this._template.querySelectorAll('*');
+
+				for(var iAlltp = 0; iAlltp< allTPElem.length; iAlltp++)
+					this.createDatasetAttributes(<HTMLElement>allTPElem[iAlltp]);
+
 				node.dataset["dtBindingGeneration"] = undefined;
 				this.createDatasetAttributes(node);
 				this.component.removeChild(node);

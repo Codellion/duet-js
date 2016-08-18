@@ -69,6 +69,9 @@ class ModelView<T> {
 				}
 			}
 		}
+		else {
+			this.model = {};
+		}
 
 		if (modelName) {
 			var docElements: Array<Element> = [];

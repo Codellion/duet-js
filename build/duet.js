@@ -171,6 +171,9 @@ var ModelView = (function () {
                 }
             }
         }
+        else {
+            this.model = {};
+        }
         if (modelName) {
             var docElements = [];
             if (elementContainer) {
@@ -389,6 +392,9 @@ var ModelProperty = (function () {
                 else {
                     this._template = node;
                 }
+                var allTPElem = this._template.querySelectorAll('*');
+                for (var iAlltp = 0; iAlltp < allTPElem.length; iAlltp++)
+                    this.createDatasetAttributes(allTPElem[iAlltp]);
                 node.dataset["dtBindingGeneration"] = undefined;
                 this.createDatasetAttributes(node);
                 this.component.removeChild(node);
