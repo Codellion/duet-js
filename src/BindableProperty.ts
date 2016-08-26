@@ -31,7 +31,7 @@ class BindableProperty {
 	propertyChange: CustomEvent;
 
 	get funcDefinition(): string {
-		if (this._funcDefinitionString == null)
+		if (this._funcDefinitionString == null && this._funcDefinition)
 			this._funcDefinitionString = this._funcDefinition.toString().replace(' ', '');
 
 		return this._funcDefinitionString;
@@ -165,8 +165,10 @@ class BindableProperty {
 
 		if (this.objectValue != null || typeof this.objectValue == "object")
 			result = JSON.stringify(this.originalObject(this.objectValue));
-		else
+		else if(this.value)
 			result = this.value.toString();
+		else
+			result = null;
 
 		return result;
 	}
@@ -264,7 +266,12 @@ class BindableProperty {
 	}
 
 	subscribe(callback: Function): void {
-		document.addEventListener(this.propertyChangeEvent, <any>callback);
+		var _self = this;
+		var modCallback = function() {
+			return callback(_self);
+		}
+
+		document.addEventListener(this.propertyChangeEvent, <any>modCallback);
 	}
 
 	private originalObject(value: any): any {

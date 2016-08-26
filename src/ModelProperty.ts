@@ -161,9 +161,10 @@ class ModelProperty<T> {
 					this._template = node.contentDocument.body.children[0];
 				}
 				else {
-					this._template = <HTMLElement>node;
+					this._template = <HTMLElement>node.cloneNode(true);
 				}
 
+				this.createDatasetAttributes(this.template);
 				var allTPElem = this._template.querySelectorAll('*');
 
 				for(var iAlltp = 0; iAlltp< allTPElem.length; iAlltp++)
@@ -241,6 +242,10 @@ class ModelProperty<T> {
             var attr = element.attributes[prop];
             if(attr != null && attr.name) {
 				if(attr.name.indexOf("dt") == 0) {
+					if((!element.hasAttribute("dt") && !element.hasAttribute("data-dt")) && this.modelView.modelName != "duet.model")
+						element.setAttribute("dt", this.modelView.modelName);
+
+
 	            	var attrName = attr.name;
 					var iattrName = attrName.indexOf('-');
 
@@ -253,6 +258,8 @@ class ModelProperty<T> {
 	                element.dataset[attrName] = attr.value;
 	            } else if(attr.name == "children-map") {
 					element.dataset["childrenMap"] = attr.value;
+					if((!element.hasAttribute("dt") && !element.hasAttribute("data-dt")) && this.modelView.modelName != "duet.model")
+						element.setAttribute("dt", this.modelView.modelName);
 	            }
             }
         }

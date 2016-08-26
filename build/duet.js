@@ -266,6 +266,64 @@ var ModelView = (function () {
         }
         return res;
     };
+    ModelView.prototype.getSimpleModel = function () {
+        return this.toSimpleModel(null, this.model);
+    };
+    ModelView.prototype.getJSON = function () {
+        return JSON.stringify(this.getSimpleModel());
+    };
+    ModelView.prototype.toSimpleModel = function (res, obj) {
+        if (!res) {
+            if (typeof obj == "object") {
+                if (obj instanceof Array || obj instanceof ObservableArray) {
+                    res = [];
+                }
+                else {
+                    res = {};
+                }
+            }
+            else {
+                return obj;
+            }
+        }
+        if (!obj)
+            obj = this.model;
+        var auxAccesor = obj["mutated-accesors"];
+        if (auxAccesor) {
+            for (var i in auxAccesor) {
+                var propName = auxAccesor[i];
+                if (propName.indexOf('@') != 0 && propName.indexOf('#') != 0) {
+                    var bind = obj["_" + propName];
+                    var bindValue = bind.value;
+                    if (bindValue) {
+                        if (typeof bindValue == "object") {
+                            var auxArr = [];
+                            if (bindValue instanceof Array || bindValue instanceof ObservableArray) {
+                                for (var j = 0; j < bindValue.length; j++) {
+                                    var auxSubValue = this.toSimpleModel(null, bindValue[j]);
+                                    auxArr.push(auxSubValue);
+                                }
+                                res[propName] = auxArr;
+                            }
+                            else if (bindValue["mutated-accesors"]) {
+                                res[propName] = {};
+                                this.toSimpleModel(res[propName], bindValue);
+                            }
+                        }
+                        else {
+                            res[propName] = bindValue;
+                        }
+                    }
+                    else {
+                        res[propName] = null;
+                    }
+                }
+            }
+        }
+        else
+            res = obj;
+        return res;
+    };
     ModelView.prototype.createObservableObject = function (obj, parentName) {
         if (typeof (obj) !== "object" || (obj && obj["mutated-observation"]))
             return;
@@ -390,8 +448,11 @@ var ModelProperty = (function () {
                     this._template = node.contentDocument.body.children[0];
                 }
                 else {
-                    this._template = node;
+                    this._template = node.cloneNode(true);
                 }
+                if (this._template == null)
+                    var a = ";";
+                this.createDatasetAttributes(this.template);
                 var allTPElem = this._template.querySelectorAll('*');
                 for (var iAlltp = 0; iAlltp < allTPElem.length; iAlltp++)
                     this.createDatasetAttributes(allTPElem[iAlltp]);
@@ -557,6 +618,8 @@ var ModelProperty = (function () {
             var attr = element.attributes[prop];
             if (attr != null && attr.name) {
                 if (attr.name.indexOf("dt") == 0) {
+                    if ((!element.hasAttribute("dt") && !element.hasAttribute("data-dt")) && this.modelView.modelName != "duet.model")
+                        element.setAttribute("dt", this.modelView.modelName);
                     var attrName = attr.name;
                     var iattrName = attrName.indexOf('-');
                     while (iattrName != -1) {
@@ -568,6 +631,8 @@ var ModelProperty = (function () {
                 }
                 else if (attr.name == "children-map") {
                     element.dataset["childrenMap"] = attr.value;
+                    if ((!element.hasAttribute("dt") && !element.hasAttribute("data-dt")) && this.modelView.modelName != "duet.model")
+                        element.setAttribute("dt", this.modelView.modelName);
                 }
             }
         }
@@ -999,7 +1064,7 @@ var BindableProperty = (function () {
     }
     Object.defineProperty(BindableProperty.prototype, "funcDefinition", {
         get: function () {
-            if (this._funcDefinitionString == null)
+            if (this._funcDefinitionString == null && this._funcDefinition)
                 this._funcDefinitionString = this._funcDefinition.toString().replace(' ', '');
             return this._funcDefinitionString;
         },
@@ -1127,8 +1192,10 @@ var BindableProperty = (function () {
             var result = "";
             if (this.objectValue != null || typeof this.objectValue == "object")
                 result = JSON.stringify(this.originalObject(this.objectValue));
-            else
+            else if (this.value)
                 result = this.value.toString();
+            else
+                result = null;
             return result;
         },
         enumerable: true,
@@ -1184,7 +1251,11 @@ var BindableProperty = (function () {
         document.dispatchEvent(this.propertyChange);
     };
     BindableProperty.prototype.subscribe = function (callback) {
-        document.addEventListener(this.propertyChangeEvent, callback);
+        var _self = this;
+        var modCallback = function () {
+            return callback(_self);
+        };
+        document.addEventListener(this.propertyChangeEvent, modCallback);
     };
     BindableProperty.prototype.originalObject = function (value) {
         var ori = null;
@@ -1224,7 +1295,14 @@ var BindableProperty = (function () {
 var duet = (function () {
     function duet() {
     }
-    duet.bind = function (model, modelName) {
+    Object.defineProperty(duet, "fn", {
+        get: function () {
+            return duet;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    duet.bind = function (model, modelName, force) {
         if (!duet.subModels)
             duet.subModels = {};
         if (!duet.subModelViews)
@@ -1234,7 +1312,7 @@ var duet = (function () {
         else {
             duet.subModels[modelName] = model;
         }
-        if (duet.readyComplete) {
+        if (duet.readyComplete || force) {
             if (modelName) {
                 if (duet.subModelViews[modelName]) {
                     duet.subModelViews[modelName].unbind();
@@ -1284,8 +1362,17 @@ var duet = (function () {
         }
         window.onload = duet.ready;
     };
+    duet.preInit = function (callback) {
+        duet.preInitCallback = callback;
+    };
+    duet.extend = function (obj) {
+        for (var i in obj)
+            duet[i] = obj[i];
+    };
     duet.ready = function () {
         if (!duet.isReady) {
+            if (duet.preInitCallback)
+                duet.preInitCallback();
             duet.isReady = true;
             if (duet.model)
                 duet.modelView = new ModelView("duet.model", duet.model);

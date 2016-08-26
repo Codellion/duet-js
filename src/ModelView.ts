@@ -165,6 +165,77 @@ class ModelView<T> {
 		return res;
 	}
 
+	getSimpleModel() : any {
+		return this.toSimpleModel(null, this.model);
+	}
+
+	getJSON() : string {
+		return JSON.stringify(this.getSimpleModel());
+	}
+
+	private toSimpleModel(res?: any, obj?: any): void {
+
+		if(!res) {
+			if(typeof obj == "object") {
+				if(obj instanceof Array || obj instanceof ObservableArray){
+					res = [];
+				}
+				else {
+					res = {};
+				}
+			}
+			else {
+				return obj;
+			}
+		}
+
+		if(!obj)
+			obj = this.model;
+		
+		var auxAccesor = obj["mutated-accesors"];
+
+		if(auxAccesor) {
+			for (var i in auxAccesor) {
+				var propName = auxAccesor[i];
+
+				if(propName.indexOf('@') != 0 && propName.indexOf('#') != 0) {
+					var bind = obj["_" + propName];
+					var bindValue = bind.value;
+
+					if(bindValue) {
+						if(typeof bindValue == "object") {
+							var auxArr = [];
+
+							if(bindValue instanceof Array || bindValue instanceof ObservableArray){
+								for(var j = 0; j < bindValue.length; j++) {
+									var auxSubValue = this.toSimpleModel(null, bindValue[j]);
+									auxArr.push(auxSubValue);
+								}
+
+								res[propName] = auxArr;
+							}
+							else if(bindValue["mutated-accesors"]){
+								res[propName] = {};
+								this.toSimpleModel(res[propName], bindValue);
+							}
+						}
+						else {
+							res[propName] = bindValue;
+						}
+					}
+					else {
+						res[propName] = null;
+					}
+				}
+			}
+		}
+		else
+			res = obj;
+		
+
+		return res;
+	}
+
 	private createObservableObject(obj: any, parentName?: string): void {
 		if (typeof (obj) !== "object" || (obj && obj["mutated-observation"]))
 			return;

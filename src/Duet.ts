@@ -11,8 +11,13 @@ class duet {
 	private static isReady: boolean;
 	private static readyComplete: boolean;
 	private static initCallback: Function;
+	private static preInitCallback: Function;
 
-	static bind(model: any, modelName?: string): void {
+	static get fn(): any {
+		return duet;
+	}
+
+	static bind(model: any, modelName?: string, force?: boolean): void {
 		if(!duet.subModels)
 			duet.subModels = {};
 		if(!duet.subModelViews)
@@ -24,7 +29,7 @@ class duet {
 			duet.subModels[modelName] = model;
 		}
 
-		if(duet.readyComplete) {
+		if(duet.readyComplete || force) {
 			if(modelName){
 				if(duet.subModelViews[modelName]){
 					duet.subModelViews[modelName].unbind();
@@ -91,8 +96,22 @@ class duet {
 	    window.onload = duet.ready;
 	}
 
+	static preInit(callback: Function) :void {
+		duet.preInitCallback = callback;
+	}
+
+	static extend(obj: any) : void {
+
+		for(var i in obj)
+			duet[i] = obj[i];
+
+	}
+
 	private static ready(): void {
 		if(!duet.isReady){
+			if(duet.preInitCallback)
+				duet.preInitCallback();
+
 			duet.isReady = true;
 
 			if(duet.model)
