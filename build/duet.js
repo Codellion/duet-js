@@ -450,8 +450,6 @@ var ModelProperty = (function () {
                 else {
                     this._template = node.cloneNode(true);
                 }
-                if (this._template == null)
-                    var a = ";";
                 this.createDatasetAttributes(this.template);
                 var allTPElem = this._template.querySelectorAll('*');
                 for (var iAlltp = 0; iAlltp < allTPElem.length; iAlltp++)
@@ -743,6 +741,14 @@ var ModelProperty = (function () {
             }
         return prop;
     };
+    ModelProperty.prototype.getAllComponentBinding = function (bindName) {
+        var prop = [];
+        for (var bind in this.componentBindings)
+            if (bindName == this.componentBindings[bind]) {
+                prop.push(bind);
+            }
+        return prop;
+    };
     ModelProperty.prototype.syncComponentChange = function (comp, attrName) {
         if (comp instanceof HTMLElement) {
             for (var compBind in this.componentBindings) {
@@ -807,49 +813,52 @@ var ModelProperty = (function () {
     ModelProperty.prototype.setComponentBinding = function (binding) {
         binding.dirty = true;
         var internalComponent = this.component;
-        var prop = this.getComponentBinding(binding.name);
-        if (prop != null && prop.indexOf('.') != -1) {
-            var internalProps = prop.split('.');
-            prop = internalProps[internalProps.length - 1];
-            internalProps = internalProps.slice(0, internalProps.length - 1);
-            internalProps.forEach(function (n) {
-                if (!internalComponent[n])
-                    internalComponent[n] = {};
-                internalComponent = internalComponent[n];
-            });
-        }
-        binding.htmlComponent = internalComponent;
-        if (typeof (internalComponent[prop]) !== "undefined") {
-            if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
-                if (binding.dirty) {
-                    for (var j = internalComponent[prop].length - 1; j > -1; j--) {
-                        internalComponent[prop][j].dataset["dtBindingGeneration"] = undefined;
-                        if (internalComponent[prop][j].remove)
-                            internalComponent[prop][j].remove();
-                        else
-                            this.component.removeChild(this.component.children[j]);
+        var props = this.getAllComponentBinding(binding.name);
+        for (var p = 0; p < props.length; p++) {
+            var prop = props[p];
+            if (prop != null && prop.indexOf('.') != -1) {
+                var internalProps = prop.split('.');
+                prop = internalProps[internalProps.length - 1];
+                internalProps = internalProps.slice(0, internalProps.length - 1);
+                internalProps.forEach(function (n) {
+                    if (!internalComponent[n])
+                        internalComponent[n] = {};
+                    internalComponent = internalComponent[n];
+                });
+            }
+            binding.htmlComponent = internalComponent;
+            if (typeof (internalComponent[prop]) !== "undefined") {
+                if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
+                    if (binding.dirty) {
+                        for (var j = internalComponent[prop].length - 1; j > -1; j--) {
+                            internalComponent[prop][j].dataset["dtBindingGeneration"] = undefined;
+                            if (internalComponent[prop][j].remove)
+                                internalComponent[prop][j].remove();
+                            else
+                                this.component.removeChild(this.component.children[j]);
+                        }
+                        if (Array.isArray(binding.value) || binding.value instanceof ObservableArray) {
+                            for (var i = 0; i < binding.value.length; i++)
+                                this.bindingObservableItem(binding.name, i, binding.value[i], prop);
+                        }
+                        else {
+                            this.bindingObservableItem(binding.name, 0, binding.value, prop);
+                        }
                     }
-                    if (Array.isArray(binding.value) || binding.value instanceof ObservableArray) {
-                        for (var i = 0; i < binding.value.length; i++)
-                            this.bindingObservableItem(binding.name, i, binding.value[i], prop);
+                }
+                else if (typeof (binding.value) !== "undefined") {
+                    if (internalComponent['multiple'] && prop === "value") {
+                        var lenght = internalComponent.children.length;
+                        for (var i = 0; i < lenght; i++) {
+                            if (binding.value != null && binding.value.indexOf(internalComponent.children[i]['value']) !== -1)
+                                internalComponent.children[i]['selected'] = true;
+                            else
+                                internalComponent.children[i]['selected'] = false;
+                        }
                     }
                     else {
-                        this.bindingObservableItem(binding.name, 0, binding.value, prop);
+                        internalComponent[prop] = binding.value;
                     }
-                }
-            }
-            else if (typeof (binding.value) !== "undefined") {
-                if (internalComponent['multiple'] && prop === "value") {
-                    var lenght = internalComponent.children.length;
-                    for (var i = 0; i < lenght; i++) {
-                        if (binding.value != null && binding.value.indexOf(internalComponent.children[i]['value']) !== -1)
-                            internalComponent.children[i]['selected'] = true;
-                        else
-                            internalComponent.children[i]['selected'] = false;
-                    }
-                }
-                else {
-                    internalComponent[prop] = binding.value;
                 }
             }
         }

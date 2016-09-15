@@ -401,6 +401,16 @@ class ModelProperty<T> {
 		return prop;
 	}
 
+	private getAllComponentBinding(bindName: string): string[] {
+		var prop: string[] = [];
+		for (var bind in this.componentBindings)
+			if (bindName == this.componentBindings[bind]) {
+				prop.push(bind);
+			}
+
+		return prop;
+	}
+
 	private syncComponentChange(comp: any, attrName: string): void {
 		if (comp instanceof HTMLElement) {
 			for (var compBind in this.componentBindings) {
@@ -481,57 +491,61 @@ class ModelProperty<T> {
 	setComponentBinding(binding: BindableProperty): void {
 		binding.dirty = true;
 		var internalComponent = this.component;
-		var prop = this.getComponentBinding(binding.name);
+		var props = this.getAllComponentBinding(binding.name);
 
-		if (prop != null && prop.indexOf('.') != -1) {
-			var internalProps = prop.split('.');
-			prop = internalProps[internalProps.length - 1];
-			internalProps = internalProps.slice(0, internalProps.length - 1);
+		for(var p = 0; p < props.length; p++) {
+			var prop = props[p];
 
-			internalProps.forEach((n) => {
-				if (!internalComponent[n])
-					internalComponent[n] = {};
+			if (prop != null && prop.indexOf('.') != -1) {
+				var internalProps = prop.split('.');
+				prop = internalProps[internalProps.length - 1];
+				internalProps = internalProps.slice(0, internalProps.length - 1);
 
-				internalComponent = internalComponent[n];
-			});
-		}
+				internalProps.forEach((n) => {
+					if (!internalComponent[n])
+						internalComponent[n] = {};
 
-		binding.htmlComponent = internalComponent;
+					internalComponent = internalComponent[n];
+				});
+			}
 
-		if (typeof (internalComponent[prop]) !== "undefined") {
-			if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
-				if (binding.dirty) {
-					for (var j = internalComponent[prop].length - 1; j > -1; j--) {
-						internalComponent[prop][j].dataset["dtBindingGeneration"] = undefined;
+			binding.htmlComponent = internalComponent;
 
-						if (internalComponent[prop][j].remove)
-							internalComponent[prop][j].remove();
-						else
-							this.component.removeChild(this.component.children[j]);
+			if (typeof (internalComponent[prop]) !== "undefined") {
+				if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
+					if (binding.dirty) {
+						for (var j = internalComponent[prop].length - 1; j > -1; j--) {
+							internalComponent[prop][j].dataset["dtBindingGeneration"] = undefined;
+
+							if (internalComponent[prop][j].remove)
+								internalComponent[prop][j].remove();
+							else
+								this.component.removeChild(this.component.children[j]);
+						}
+
+						if (Array.isArray(binding.value) || binding.value instanceof ObservableArray) {
+							for (var i = 0; i < binding.value.length; i++)
+								this.bindingObservableItem(binding.name, i, binding.value[i], prop);
+						}
+						else {
+							this.bindingObservableItem(binding.name, 0, binding.value, prop);
+						}
 					}
+				}
+				else if (typeof (binding.value) !== "undefined") {
+					if (internalComponent['multiple'] && prop === "value") {
+						var lenght = internalComponent.children.length;
 
-					if (Array.isArray(binding.value) || binding.value instanceof ObservableArray) {
-						for (var i = 0; i < binding.value.length; i++)
-							this.bindingObservableItem(binding.name, i, binding.value[i], prop);
+						for (var i = 0; i < lenght; i++) {
+							if (binding.value != null && binding.value.indexOf(internalComponent.children[i]['value']) !== -1)
+								internalComponent.children[i]['selected'] = true;
+							else
+								internalComponent.children[i]['selected'] = false;
+						}
 					}
 					else {
-						this.bindingObservableItem(binding.name, 0, binding.value, prop);
+						internalComponent[prop] = binding.value;
 					}
-				}
-			}
-			else if (typeof (binding.value) !== "undefined") {
-				if (internalComponent['multiple'] && prop === "value") {
-					var lenght = internalComponent.children.length;
-
-					for (var i = 0; i < lenght; i++) {
-						if (binding.value != null && binding.value.indexOf(internalComponent.children[i]['value']) !== -1)
-							internalComponent.children[i]['selected'] = true;
-						else
-							internalComponent.children[i]['selected'] = false;
-					}
-				}
-				else {
-					internalComponent[prop] = binding.value;
 				}
 			}
 		}
