@@ -189,10 +189,7 @@ var ModelView = (function () {
                     _this.properties.push(newProperty);
                 });
             }
-            this.properties.forEach(function (n) {
-                for (var bindName in n.internalBindings)
-                    n.setComponentBinding(n.bindings[bindName]);
-            });
+            this.refreshUI();
         }
         this.isInitialization = false;
     }
@@ -216,6 +213,19 @@ var ModelView = (function () {
         enumerable: true,
         configurable: true
     });
+    ModelView.prototype.refreshUI = function () {
+        this.properties.forEach(function (n) {
+            for (var bindName in n.internalBindings)
+                n.setComponentBinding(n.bindings[bindName]);
+            if (n.component && n.component["rosettaID"] == "") {
+                var rossetaComp = n.component;
+                if (!rossetaComp.lazyInit && rossetaComp.init) {
+                    rossetaComp.lazyInit = true;
+                    rossetaComp.init();
+                }
+            }
+        });
+    };
     ModelView.prototype.unbind = function () {
         this.bindings = {};
         this.properties.forEach(function (n) { return n.isUnbind = true; });

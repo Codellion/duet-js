@@ -92,13 +92,25 @@ class ModelView<T> {
 				});
 			}
 
-			this.properties.forEach(n => {
-				for (var bindName in n.internalBindings)
-					n.setComponentBinding(n.bindings[bindName]);
-			});
+			this.refreshUI();
 		}
 
 		this.isInitialization = false;
+	}
+
+	refreshUI() : void {
+		this.properties.forEach(n => {
+			for (var bindName in n.internalBindings)
+				n.setComponentBinding(n.bindings[bindName]);
+
+			if(n.component && n.component["rosettaID"] == "") {
+				var rossetaComp : any = <any>n.component;
+				if(!rossetaComp.lazyInit && rossetaComp.init) {
+					rossetaComp.lazyInit = true;
+					rossetaComp.init();
+				}
+			}
+		});
 	}
 
 	unbind(): void {
