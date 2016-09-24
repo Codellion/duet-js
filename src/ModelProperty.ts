@@ -135,6 +135,13 @@ class ModelProperty<T> {
 
 		this.createDatasetAttributes(this.component);
 
+		if(this.component && this.component["rosettaID"] == "") {
+			var rosettaComp : any = <any>this.component;
+			if(!rosettaComp.lazyInit && rosettaComp.init) {
+				this.modelView.rosettaComps.push(rosettaComp);
+			}
+		}
+
 		for (var name in this.component.dataset) {
 			if (this.component.dataset.hasOwnProperty(name) && (<string>name).indexOf("dt") == 0) {
 				if (name.length > 2) {
@@ -164,8 +171,11 @@ class ModelProperty<T> {
 					this._template = <HTMLElement>node.cloneNode(true);
 				}
 
-				this.createDatasetAttributes(this.template);
-				var allTPElem = this._template.querySelectorAll('*');
+				this.template.removeAttribute("dt");
+				this.template.removeAttribute("data-dt");
+				this.createDatasetAttributes(this.template, true);
+				//var allTPElem = this._template.querySelectorAll('*');
+				var allTPElem = this.modelView.getAllDuetNodes(this._template);
 
 				for(var iAlltp = 0; iAlltp< allTPElem.length; iAlltp++)
 					this.createDatasetAttributes(<HTMLElement>allTPElem[iAlltp]);
@@ -237,13 +247,15 @@ class ModelProperty<T> {
 		this.componentSync = new CustomEvent("componentSync", { detail: this });
 	}
 
-	private createDatasetAttributes(element: HTMLElement) :void {
+	private createDatasetAttributes(element: HTMLElement, ignoreAttr?: boolean) :void {
 		for (var prop in element.attributes){
             var attr = element.attributes[prop];
             if(attr != null && attr.name) {
 				if(attr.name.indexOf("dt") == 0) {
-					if((!element.hasAttribute("dt") && !element.hasAttribute("data-dt")) && this.modelView.modelName != "duet.model")
+					if(!ignoreAttr && (!element.hasAttribute("dt") && !element.hasAttribute("data-dt")) && this.modelView.modelName != "duet.model"){
 						element.setAttribute("dt", this.modelView.modelName);
+						element.setAttribute("data-dt", this.modelView.modelName);
+					}
 
 
 	            	var attrName = attr.name;
@@ -258,8 +270,10 @@ class ModelProperty<T> {
 	                element.dataset[attrName] = attr.value;
 	            } else if(attr.name == "children-map") {
 					element.dataset["childrenMap"] = attr.value;
-					if((!element.hasAttribute("dt") && !element.hasAttribute("data-dt")) && this.modelView.modelName != "duet.model")
+					if(!ignoreAttr && (!element.hasAttribute("dt") && !element.hasAttribute("data-dt")) && this.modelView.modelName != "duet.model") {
 						element.setAttribute("dt", this.modelView.modelName);
+						element.setAttribute("data-dt", this.modelView.modelName);
+					}						
 	            }
             }
         }
@@ -268,14 +282,17 @@ class ModelProperty<T> {
 	private listenChangeEvents(propName: string, bindProperty: BindableProperty): void {
 		var instance = this;
 
-		document.addEventListener(bindProperty.propertyChangeEvent, function(e: CustomEvent) {
+		function propChange(e: CustomEvent) {
 			if(instance.isUnbind) {
 				document.removeEventListener(bindProperty.propertyChangeEvent, <any>arguments.callee, false);
 				return;	
 			}
 
 			instance.onBindingChange(<CustomEvent>e) 
-		}, false);
+		}
+
+		document.removeEventListener(bindProperty.propertyChangeEvent, propChange);
+		document.addEventListener(bindProperty.propertyChangeEvent, propChange, false);
 		
 		var internalComponent = this.component;
 		var propInternalName = propName;
@@ -307,7 +324,7 @@ class ModelProperty<T> {
 
 					instance.bindingObservableItem(e.detail.name, e.detail.index, e.detail.item, prop);
 				}
-			});
+			}, false);
 
 			document.addEventListener(propName + "elementRemoved", function(e: CustomEvent) {
 				if(instance.isUnbind) {
@@ -329,7 +346,7 @@ class ModelProperty<T> {
 						}
 					}
 				}
-			});
+			}, false);
 		}
 	}
 
@@ -386,7 +403,7 @@ class ModelProperty<T> {
             
 		this.component.appendChild(element);
 
-		var newModel = new ModelView(newModelName, item, <HTMLElement>element, bindName, this.modelView.originalModel);
+		var newModel = new ModelView(newModelName, item, <HTMLElement>element, bindName, this.modelView.originalModel, this.modelView);
 		this.modelView.subModels.push(newModel);
 	}
 
@@ -489,6 +506,7 @@ class ModelProperty<T> {
 	}
 
 	setComponentBinding(binding: BindableProperty): void {
+		var instance = this;
 		binding.dirty = true;
 		var internalComponent = this.component;
 		var props = this.getAllComponentBinding(binding.name);
@@ -513,22 +531,22 @@ class ModelProperty<T> {
 
 			if (typeof (internalComponent[prop]) !== "undefined") {
 				if (internalComponent[prop] != null && internalComponent[prop].__proto__ == HTMLCollection.prototype) {
-					if (binding.dirty) {
+					if (binding.dirty && instance.template) {
 						for (var j = internalComponent[prop].length - 1; j > -1; j--) {
 							internalComponent[prop][j].dataset["dtBindingGeneration"] = undefined;
 
 							if (internalComponent[prop][j].remove)
 								internalComponent[prop][j].remove();
 							else
-								this.component.removeChild(this.component.children[j]);
+								instance.component.removeChild(instance.component.children[j]);
 						}
 
 						if (Array.isArray(binding.value) || binding.value instanceof ObservableArray) {
 							for (var i = 0; i < binding.value.length; i++)
-								this.bindingObservableItem(binding.name, i, binding.value[i], prop);
+								instance.bindingObservableItem(binding.name, i, binding.value[i], prop);
 						}
 						else {
-							this.bindingObservableItem(binding.name, 0, binding.value, prop);
+							instance.bindingObservableItem(binding.name, 0, binding.value, prop);
 						}
 					}
 				}

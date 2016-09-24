@@ -21,6 +21,9 @@ class ModelView<T> {
 	model: any;
 	subModels: Array<ModelView<any>>;
 	isInitialization: boolean;
+	rosettaComps: Array<any>;
+	parentModel: ModelView<any>;
+
 
 	private _modelName: string;
 	private _isUnbind: boolean;
@@ -41,18 +44,22 @@ class ModelView<T> {
 		this._modelName = value;
 	}
 
-	constructor(modelName: string, model: { new (): T; }, elementContainer?: Element, elementModel?: string, oriModel?: ModelView<any>) {
+	constructor(modelName: string, model: { new (): T; }, elementContainer?: Element, elementModel?: string, oriModel?: ModelView<any>, parentModel?: ModelView<any>) {
 		this.modelName = modelName;
 		this.properties = new Array<ModelProperty<T>>();
 		if (!this.bindings)
 			this.bindings = {};
 		this.subModels = new Array<ModelView<any>>();
 		this.isInitialization = true;
+		this.rosettaComps = [];
 
 		if (oriModel)
 			this.originalModel = oriModel;
 		else
 			this.originalModel = this;
+
+		if(parentModel)
+			this.parentModel = parentModel;
 
 		if (model) {
 			this.model = model;
@@ -95,21 +102,22 @@ class ModelView<T> {
 			this.refreshUI();
 		}
 
+		for(var rComp = 0; rComp < this.rosettaComps.length; rComp++) {
+			var rosettaComp = this.rosettaComps[rComp];
+
+			rosettaComp.lazyInit = true;
+			rosettaComp.init(this);
+		}
+
+		this.rosettaComps = [];
+
 		this.isInitialization = false;
 	}
 
 	refreshUI() : void {
 		this.properties.forEach(n => {
 			for (var bindName in n.internalBindings)
-				n.setComponentBinding(n.bindings[bindName]);
-
-			if(n.component && n.component["rosettaID"] == "") {
-				var rossetaComp : any = <any>n.component;
-				if(!rossetaComp.lazyInit && rossetaComp.init) {
-					rossetaComp.lazyInit = true;
-					rossetaComp.init();
-				}
-			}
+				n.setComponentBinding(n.bindings[bindName]);			
 		});
 	}
 

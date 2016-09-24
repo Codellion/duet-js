@@ -37,6 +37,7 @@ class duet {
 				}
 
 				duet.subModelViews[modelName] = new ModelView(modelName, duet.subModels[modelName]);
+
 			}
 			else {
 				if(duet.modelView)
@@ -44,7 +45,6 @@ class duet {
 				duet.modelView = new ModelView("duet.model", duet.model);
 			}
 		}
-
 	}
 
 	static init(callback? : Function): void {
@@ -118,7 +118,7 @@ class duet {
 				duet.modelView = new ModelView("duet.model", duet.model);
 
 			for(var model in duet.subModels)
-				duet.subModelViews[model] = new ModelView(model, duet.subModels[model]);
+				duet.subModelViews[model] = new ModelView(model, duet.subModels[model]);			
 
 			duet.readyComplete = true;
 
