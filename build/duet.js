@@ -235,8 +235,13 @@ var ModelView = (function () {
         this.subModels.forEach(function (subMd) { return subMd.unbind(); });
     };
     ModelView.prototype.getAllDuetNodes = function (element) {
-        if (!element)
+        var isAutoGen = false;
+        if (!element) {
             element = document;
+        }
+        else {
+            isAutoGen = element.dataset.dtBindingGeneration !== undefined;
+        }
         var dom = element.getElementsByTagName('*');
         var res = [];
         var resParent = [];
@@ -245,14 +250,14 @@ var ModelView = (function () {
             var domFound = false;
             if (domObj.attributes.hasOwnProperty("dt") || domObj.attributes.hasOwnProperty("data-dt")) {
                 if (domObj.attributes.hasOwnProperty("dt")) {
-                    validNode = domObj.attributes["dt"].value == this.originalModel.modelName;
+                    validNode = (domObj.attributes["dt"].value == this.originalModel.modelName) || isAutoGen;
                 }
                 else if (domObj.attributes.hasOwnProperty("data-dt")) {
-                    validNode = domObj.attributes["data-dt"].value == this.originalModel.modelName;
+                    validNode = (domObj.attributes["data-dt"].value == this.originalModel.modelName) || isAutoGen;
                 }
             }
             else
-                validNode = "duet.model" == this.originalModel.modelName;
+                validNode = ("duet.model" == this.originalModel.modelName) || isAutoGen;
             if (validNode) {
                 for (var j = 0; j < domObj.attributes.length && !domFound; j++) {
                     var attr = domObj.attributes[j];

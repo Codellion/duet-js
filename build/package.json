@@ -1,6 +1,6 @@
 {
   "name": "duet-js",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "MVVM Javascript framework",
   "main": "index.js",
   "directories": {
