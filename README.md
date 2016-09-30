@@ -1,6 +1,7 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/codellion/duet-js/master/logo.PNG" width="300">
 </p>
+
 ## Descripción ##
 **Duet-js** es una librería javascript que permite incluir atributos dinámicos en las etiquetas HTML, además permite enlazar dichas etiquetas a valores y cálculos en tiempo real permitiendo un diseño MVVM en la capa de presentación.
 
@@ -16,7 +17,7 @@ Sus principales características son:
 - Expresiones lambda
 - Multiples modelos y submodelos
 - No tiene ninguna dependencia de librerías
-- Un peso comprimido de 25 KB
+- Un peso minificado de 28 KB y de 7 KB comprimido en el navegador
 - Desarrollado en Typescript con especificaciones ES6
 
 
@@ -126,9 +127,11 @@ Las **inline binding** se expresan directamente en los atributos de las etiqueta
 	</body>
 
 
+Tanto el caracter especial `#` como el `@` son obligatorios cuando se desee incluir lógica más compleja que la de la simple asignación, es decir, para los atributos si necesitamos realizar algun tipo de cálculo o si para los eventos necesitamos pasarle algún tipo de parámetro como argumento, en caso contrario no será necesario ni la palabra this ni los parentesis de la función asignada al evento.
+
 Dentro de las **inline-binding** se puede hacer referencia al elemento al que esta enlazado mediante la palabra reservada `this`, que representa el **duet-scope** del elemento. Este ámbito contiene todos los datos necesarios para interaccionar tanto con la vista como con el modelo:
 
-- **this**: Dentro del propio elemento `this`encontraremos todas la propiedades enlazadas al componente dentro de su propio contexto, es decir, si estamos dentro de un elemento de una lista este objecto representará el propio elemento seleccionado no el modelo completo.
+- **this**: Dentro del propio elemento `this` encontraremos todas la propiedades enlazadas al componente dentro de su propio contexto, es decir, si estamos dentro de un elemento de una lista este objecto representará el propio elemento seleccionado no el modelo completo.
 - **this.view**: Representa el objecto javascript del componente HTML enlazado al **inline-binding**. 
 - **this.model**: Corresponde al objeto del modelo que se encuentra enlazado a la vista.
 
@@ -137,6 +140,7 @@ Exiten casos especiales en donde el enlace entre la vista y el modelo no es tan 
 
 #### Atributos secundarios ####
 Algunos de los atributos de los componentes HTML son diccionarios de tipo clave->valor, como por ejemplo el atributo `style`, en estos casos para navegar entre los distintos niveles del arbol de propiedades se utiliza el caracter *`.`*.
+Adicionalmente hay que tener en cuenta que el algoritmo de duetJS utiliza internamente el objeto `dataset`de los elementos por lo que convierte todos los carácteres de la propiedad a minúscula, por ello para acceder a ellos será necesario agregar un `-` justo delante de la letra que deseemos poner en mayúsculas. (P.j. innerText -> dt-inner-text)
 
 	
 		
@@ -154,6 +158,7 @@ Algunos de los atributos de los componentes HTML son diccionarios de tipo clave-
 		duet.init();		
 	</script>
 	<body>
+		<span dt-inner-text="#'Hola Mundo:'"></span>
 		<input type="button" dt-value="name" dt-onclick="clickEvent" 			
 			dt-style.font-weight="fontWeight">	
 		<input type="button" dt-value="#this.name + '!'" 
@@ -296,6 +301,16 @@ this.$chosenTicket.price
 #### Defered - autodefered
 
 #### ObservableArray
+
+#### subscribe
+
+#### RefreshUI
+
+#### Estructura en cliente
+
+#### Unbind
+
+#### Eventos
 
 
 
